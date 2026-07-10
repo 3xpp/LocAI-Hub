@@ -1,4 +1,4 @@
-.PHONY: install dev dev-api dev-web test test-e2e lint typecheck format build db-upgrade
+.PHONY: install dev dev-api dev-web test test-e2e test-web lint typecheck format build db-upgrade
 
 install:
 	cd backend && uv sync
@@ -19,6 +19,9 @@ test:
 
 test-e2e:
 	cd backend && uv run pytest tests/e2e
+
+test-web:
+	cd web && pnpm test
 
 lint:
 	cd backend && uv run ruff check .

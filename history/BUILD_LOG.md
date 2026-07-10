@@ -514,3 +514,48 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add prompt registry api`
+
+## 2026-07-10 — Phase 1A frontend test harness and prompt client
+
+**Status:** Complete
+
+### Added
+
+- Added a Vitest 4.1.10 and jsdom 29.1.1 browser-like test harness with Testing Library React
+  16.3.2, user-event 14.6.1, and jest-dom 6.9.1; all new packages are development-only.
+- Added a runtime-validated prompt client for list, retrieve, create, complete update, and 204-only
+  delete requests, including typed search/filter/pagination query construction.
+- Added 19 client cases covering valid list/detail payloads; malformed nested tags, timestamps,
+  counts, limits, offsets, IDs, and content; HTTP/network/JSON failures; write requests; deletion;
+  preview bounds; URL encoding; signal forwarding; and fetch/body-read abort preservation.
+- Added `pnpm test`, `pnpm test:watch`, and root `make test-web` commands.
+
+### Decisions
+
+- Refactored the existing health/Ollama transport into exported JSON and no-content request helpers
+  while preserving its Phase 0 network, HTTP, invalid-response, and abort messages.
+- Kept runtime response validation dependency-free and rejected full `content` fields in list
+  summaries so an unexpected backend payload cannot silently cross that boundary.
+- Used Vitest with globals disabled, jsdom, restored mocks, CSS processing, and one explicit setup
+  file; no browser test dependency is shipped in the runtime bundle.
+
+### Verification
+
+- Confirmed the prompt client suite first failed because `src/api/prompts.ts` did not exist.
+- Frontend tests passed: 1 file, 19 tests.
+- Frontend ESLint and TypeScript project-reference type checking passed.
+- The production frontend build passed with 33 transformed modules and a 202.07 kB JavaScript
+  bundle (63.32 kB gzip).
+- pnpm reported that the esbuild dependency build script remained unapproved; no approval state was
+  changed, and both Vitest and the Vite production build completed successfully.
+- The first type-check run found an internal request-options inheritance mismatch; replacing the
+  extension with an explicit omitted-method type resolved it before the passing gates.
+- A read-only client review found that previews lacked their 160-character boundary and body-read
+  aborts were being relabeled as invalid JSON. Bounded preview validation, strict calendar checks,
+  abort-aware JSON decoding, and regressions resolved those blockers before commit.
+- A follow-up spec review found JavaScript code-unit counting disagreed with Python for astral
+  Unicode characters; code-point counting plus an emoji regression aligned both boundaries.
+
+### Commit
+
+- `test: add prompt registry frontend harness`

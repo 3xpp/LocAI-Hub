@@ -25,6 +25,12 @@ type ResponseParser<T> = (payload: unknown) => T
 
 const INVALID_RESPONSE_MESSAGE = 'Backend returned an invalid response'
 
+export interface JsonRequestOptions {
+  method?: 'GET' | 'POST' | 'PUT'
+  body?: unknown
+  signal?: AbortSignal
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -83,20 +89,33 @@ function parseOllamaModelsResponse(payload: unknown): OllamaModelsResponse {
   return payload
 }
 
-async function request<T>(
+interface BackendRequestOptions extends Omit<JsonRequestOptions, 'method'> {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+}
+
+const isAbortError = (error: unknown, signal?: AbortSignal) =>
+  signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')
+
+async function fetchBackend(
   path: string,
-  parse: ResponseParser<T>,
-  signal?: AbortSignal,
-): Promise<T> {
+  options: BackendRequestOptions = {},
+): Promise<Response> {
   let response: Response
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const request: RequestInit = { headers, signal: options.signal }
+
+  if (options.method !== undefined && options.method !== 'GET') {
+    request.method = options.method
+  }
+  if (options.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    request.body = JSON.stringify(options.body)
+  }
 
   try {
-    response = await fetch(path, {
-      headers: { Accept: 'application/json' },
-      signal,
-    })
+    response = await fetch(path, request)
   } catch (error) {
-    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+    if (isAbortError(error, options.signal)) {
       throw error
     }
 
@@ -107,21 +126,44 @@ async function request<T>(
     throw new Error(`Backend returned HTTP ${response.status}`)
   }
 
+  return response
+}
+
+export async function requestJson<T>(
+  path: string,
+  parse: ResponseParser<T>,
+  options?: JsonRequestOptions,
+): Promise<T> {
+  const response = await fetchBackend(path, options)
+
   let payload: unknown
   try {
     payload = await response.json()
-  } catch {
+  } catch (error) {
+    if (isAbortError(error, options?.signal)) {
+      throw error
+    }
     throw new Error(INVALID_RESPONSE_MESSAGE)
   }
 
   return parse(payload)
 }
 
+export async function requestNoContent(
+  path: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetchBackend(path, { method: 'DELETE', signal })
+  if (response.status !== 204) {
+    throw new Error(INVALID_RESPONSE_MESSAGE)
+  }
+}
+
 export const getHealth = (signal?: AbortSignal) =>
-  request('/health', parseHealthResponse, signal)
+  requestJson('/health', parseHealthResponse, { signal })
 
 export const getOllamaStatus = (signal?: AbortSignal) =>
-  request('/api/ollama/status', parseOllamaStatusResponse, signal)
+  requestJson('/api/ollama/status', parseOllamaStatusResponse, { signal })
 
 export const getOllamaModels = (signal?: AbortSignal) =>
-  request('/api/ollama/models', parseOllamaModelsResponse, signal)
+  requestJson('/api/ollama/models', parseOllamaModelsResponse, { signal })
