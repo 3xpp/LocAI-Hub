@@ -559,3 +559,58 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: add prompt registry frontend harness`
+
+## 2026-07-10 — Phase 1A searchable prompt registry
+
+**Status:** Complete
+
+### Added
+
+- Added Overview/Prompts masthead navigation without a router dependency and kept the existing
+  service overview isolated in its original view branch.
+- Added a responsive industrial registry rail with labeled search, exact-tag chips, result count,
+  semantic rows, loading/empty/no-match/error states, retry, server pagination, and a temporary
+  editor workbench for the next milestone.
+- Added cancellation-safe list orchestration with a 250 ms trimmed-query debounce, immediate tag
+  filters, monotonic request generations, independent abort control, server-derived next offsets,
+  deduplicating page merges, and one-shot safe desktop auto-selection.
+- Added draft/state helpers and 16 focused cases covering navigation, list states, debounce, tags,
+  pagination, stale completion, retry, unmount cancellation, desktop/mobile selection safety,
+  normalized dirty comparison, draft copying, and merge behavior.
+
+### Decisions
+
+- Kept prompt list state separate from editor mode so filtering and request failures cannot erase an
+  explicit new/selected editor intent.
+- Advanced pagination from `response.offset + response.items.length` rather than the deduplicated
+  rendered count, preserving the backend cursor when records overlap between pages.
+- Matched automatic selection to the existing 600 px mobile breakpoint; mobile stays in list mode
+  until the operator explicitly selects or creates a prompt.
+- Extended the established dark control-room language with namespaced registry styles, non-color
+  status copy, semantic lists, visible focus behavior, and reduced-motion inheritance.
+
+### Verification
+
+- Confirmed state-helper tests first failed because `promptState.ts` did not exist and registry tests
+  first failed because `PromptRegistry.tsx` did not exist.
+- Frontend tests passed: 3 files, 35 tests.
+- Frontend ESLint and TypeScript project-reference type checking passed.
+- The production frontend build passed with 38 transformed modules, a 212.99 kB JavaScript bundle
+  (66.34 kB gzip), and 17.47 kB CSS (4.34 kB gzip).
+- Headless Firefox desktop and mobile-width smoke captures rendered the real Vite registry error
+  state with intact hierarchy, controls, responsive stacking, and no horizontal overflow.
+- The first registry test run exposed five ambiguous title queries because the safely selected title
+  appears in both the semantic row and workbench; role-scoped assertions corrected the tests.
+- A read-only preflight identified server-offset pagination, one-shot selection intent, explicit
+  mobile behavior, and late mock completion as race boundaries; each received implementation and
+  regression coverage before review.
+- Read-only behavior reviews found that a failed replacement could retain stale pagination and that
+  pre-debounce search intent could accept an old auto-selection. Immediate generation invalidation,
+  atomic replacement resets, common Unicode case-fold expansions, and race regressions resolved
+  them. A follow-up normalized-query regression also prevents whitespace-only loading deadlocks.
+- The debounce commit now carries an explicit pending token so a quick search-and-revert still
+  reloads the last committed filter even when its normalized text value is unchanged.
+
+### Commit
+
+- `feat: add searchable prompt registry`

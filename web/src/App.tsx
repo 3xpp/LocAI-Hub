@@ -11,6 +11,8 @@ import {
 import { HealthCard } from './components/HealthCard'
 import { ModelList } from './components/ModelList'
 import { OllamaStatusCard } from './components/OllamaStatusCard'
+import { PromptRegistry } from './features/prompts/PromptRegistry'
+import { usePromptRegistry } from './features/prompts/usePromptRegistry'
 
 interface Resource<T> {
   data: T | null
@@ -31,11 +33,13 @@ const wasAborted = (error: unknown, signal: AbortSignal) =>
   signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
 
 export default function App() {
+  const [activeView, setActiveView] = useState<'overview' | 'prompts'>('overview')
   const [health, setHealth] = useState(initialResource<HealthResponse>)
   const [ollama, setOllama] = useState(initialResource<OllamaStatusResponse>)
   const [models, setModels] = useState(initialResource<OllamaModelsResponse>)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
   const activeRequest = useRef<AbortController | null>(null)
+  const promptRegistry = usePromptRegistry(activeView === 'prompts')
 
   const refresh = useCallback(async () => {
     activeRequest.current?.abort()
@@ -101,59 +105,83 @@ export default function App() {
           </span>
           <span>Local AI Workflow Hub</span>
         </div>
-        <p className="node-label">
-          <span aria-hidden="true" /> Local node / read only
-        </p>
+        <div className="masthead__controls">
+          <nav className="view-switcher" aria-label="Dashboard views">
+            <button
+              type="button"
+              aria-current={activeView === 'overview' ? 'page' : undefined}
+              onClick={() => setActiveView('overview')}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              aria-current={activeView === 'prompts' ? 'page' : undefined}
+              onClick={() => setActiveView('prompts')}
+            >
+              Prompts
+            </button>
+          </nav>
+          <p className="node-label">
+            <span aria-hidden="true" /> Local node / read only
+          </p>
+        </div>
       </header>
 
-      <section className="hero" aria-labelledby="page-title">
-        <div>
-          <p className="kicker">System overview · Control room 00</p>
-          <h1 id="page-title">
-            Local stack,
-            <br />
-            under watch.
-          </h1>
-          <p className="hero__copy">
-            Local-first dashboard for Ollama, prompts, workflows, and homelab automation.
-          </p>
-        </div>
+      {activeView === 'overview' ? (
+        <>
+          <section className="hero" aria-labelledby="page-title">
+            <div>
+              <p className="kicker">System overview · Control room 00</p>
+              <h1 id="page-title">
+                Local stack,
+                <br />
+                under watch.
+              </h1>
+              <p className="hero__copy">
+                Local-first dashboard for Ollama, prompts, workflows, and homelab automation.
+              </p>
+            </div>
 
-        <div className="hero__actions">
-          <button type="button" onClick={() => void refresh()} disabled={refreshing}>
-            <span>{refreshing ? 'Checking systems' : 'Refresh systems'}</span>
-            <span className="button-glyph" aria-hidden="true">
-              {refreshing ? '···' : '↻'}
-            </span>
-          </button>
-          <p aria-live="polite">
-            Last checked
-            <time dateTime={lastChecked?.toISOString()}>
-              {lastChecked?.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              }) ?? 'Not yet'}
-            </time>
-          </p>
-        </div>
-      </section>
+            <div className="hero__actions">
+              <button type="button" onClick={() => void refresh()} disabled={refreshing}>
+                <span>{refreshing ? 'Checking systems' : 'Refresh systems'}</span>
+                <span className="button-glyph" aria-hidden="true">
+                  {refreshing ? '···' : '↻'}
+                </span>
+              </button>
+              <p aria-live="polite">
+                Last checked
+                <time dateTime={lastChecked?.toISOString()}>
+                  {lastChecked?.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }) ?? 'Not yet'}
+                </time>
+              </p>
+            </div>
+          </section>
 
-      <section className="control-grid" aria-label="Local service status">
-        <div className="status-grid">
-          <HealthCard {...health} />
-          <OllamaStatusCard {...ollama} />
-        </div>
-        <ModelList {...models} />
-      </section>
+          <section className="control-grid" aria-label="Local service status">
+            <div className="status-grid">
+              <HealthCard {...health} />
+              <OllamaStatusCard {...ollama} />
+            </div>
+            <ModelList {...models} />
+          </section>
 
-      <footer className="footer">
-        <span>Private by default</span>
-        <span aria-hidden="true">//</span>
-        <span>Running on your machine</span>
-        <span className="footer__rule" aria-hidden="true" />
-        <span>Phase 00</span>
-      </footer>
+          <footer className="footer">
+            <span>Private by default</span>
+            <span aria-hidden="true">//</span>
+            <span>Running on your machine</span>
+            <span className="footer__rule" aria-hidden="true" />
+            <span>Phase 00</span>
+          </footer>
+        </>
+      ) : (
+        <PromptRegistry controller={promptRegistry} />
+      )}
     </main>
   )
 }
