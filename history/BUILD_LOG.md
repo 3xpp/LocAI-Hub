@@ -53,3 +53,34 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 0 implementation plan`
+
+## 2026-07-10 — Monorepo bootstrap and developer guardrails
+
+**Status:** Complete
+
+### Added
+
+- Added repository safety defaults, the MIT license, contributor guardrails, and root Make targets.
+- Configured the Python 3.12 backend for uv, FastAPI, SQLAlchemy, Alembic, httpx, pytest, Ruff, and mypy.
+- Added the initial backend package markers and resolved `backend/uv.lock`.
+- Configured the React 19 and TypeScript frontend for pnpm, Vite, ESLint, and strict compiler checks.
+- Added a minimal Vite development shell with a localhost-only default and same-origin proxies for `/api` and `/health`; application UI remains in the dashboard milestone.
+- Resolved `web/pnpm-lock.yaml` with pnpm 10.15.1.
+
+### Decisions
+
+- Kept this milestone to tooling and the minimum safe Vite compiler shell; dashboard application source remains in the planned UI milestone.
+- Pinned pnpm 10.15.1 in `package.json` so the user-local Corepack shim resolves a Node 20-compatible project version for direct `pnpm` Make commands.
+- Added no runtime dependencies beyond the approved Phase 0 dependency set.
+
+### Verification
+
+- `uv lock --check`, `uv sync --locked`, `uv run ruff check .`, and `uv run mypy src` passed.
+- Activated the pnpm Corepack shim in the user-local executable directory without changing system files.
+- The literal `make install` command passed, using uv for the backend and the pinned pnpm 10.15.1 release for the frontend.
+- The literal frontend `pnpm typecheck` and `pnpm lint` scripts passed against the minimal Vite shell.
+- Confirmed both backend and frontend lockfiles exist and the root Make targets expand to the planned commands.
+
+### Commit
+
+- `chore: bootstrap local ai workflow hub monorepo`
