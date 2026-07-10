@@ -423,3 +423,50 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 1a implementation plan`
+
+## 2026-07-10 — Phase 1A prompt domain and repository
+
+**Status:** Complete
+
+### Added
+
+- Added pure prompt-domain normalization for titles, raw content, optional search text, canonical
+  tags, legacy-tolerant tag decoding, and single-line content previews.
+- Added a focused SQLAlchemy prompt repository for retrieval, filtered count/list pagination,
+  create, complete editable-field replacement, and permanent deletion.
+- Added 28 unit cases covering validation boundaries, Unicode-aware tag case folding, stable
+  deduplication, malformed legacy tags, CRUD, deterministic ordering, combined filters, pagination,
+  Unicode-aware search, exact tag boundaries, literal SQL wildcard handling, refresh behavior, and
+  one-commit mutations.
+
+### Decisions
+
+- Reused the Phase 0 Prompt model and comma-delimited tags column without a migration or any schema
+  change.
+- Kept domain transformations independent of HTTP and persistence, and kept transaction ownership
+  inside repository mutations.
+- Escaped backslash, percent, and underscore before all LIKE searches; exact tags use one padded
+  comma-delimited expression so partial tags do not match.
+- Registered deterministic text functions on application-created SQLite connections so search uses
+  Unicode case folding and exact filters use the same canonical decoder as API responses.
+- Preserved prompt content byte-for-byte after validation and omitted invalid legacy tag fragments
+  rather than allowing malformed stored values to break reads.
+
+### Verification
+
+- Confirmed the domain test suite first failed during collection because the prompt service did not
+  exist, then confirmed the repository suite first failed because its package did not exist.
+- Focused prompt service and repository tests passed: 28 tests.
+- The full backend suite passed: 49 tests, with only the previously documented Starlette TestClient
+  deprecation warning.
+- Ruff lint passed, Ruff reported all 29 backend Python files formatted, and strict mypy passed
+  across 19 backend source files.
+- The first static-gate run found only import ordering, one 101-character test line, and two test
+  files requiring formatter alignment; those findings were corrected before the passing gate run.
+- A read-only review found SQLite's built-in case-insensitive comparison was ASCII-only and that
+  noncanonical legacy tags could display but fail exact filtering; both gaps received regression
+  tests and were repaired before commit without a schema or dependency change.
+
+### Commit
+
+- `feat: add prompt registry domain and repository`
