@@ -358,3 +358,37 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: record phase 0 acceptance validation`
+
+## 2026-07-10 — Phase 1A Prompt Registry design
+
+**Status:** Complete
+
+### Added
+
+- Decomposed Phase 1 into sequential 1A Prompt Registry, 1B Workflow Links, and 1C Import/Export
+  releases while preserving the full roadmap objective.
+- Specified the complete Phase 1A backend repository, domain service, CRUD/search/pagination API,
+  split-registry frontend, error handling, accessibility, security, and test strategy.
+- Used the browser visual companion to compare split-registry, card-library, and table/modal
+  layouts; the recommended split registry was selected when no alternative preference was
+  recorded.
+
+### Decisions
+
+- Reuse the existing Prompt table and plain-text tags column; Phase 1A requires no schema migration.
+- Use canonical comma-delimited persisted tags with array-based API contracts.
+- Use raw text, explicit save, dirty-state protection, copy-on-action, and confirmed permanent
+  single-item deletion.
+- Add dev-only frontend behavior-test tooling without adding a runtime UI dependency.
+- Keep Phase 1B and 1C as separate design, plan, implementation, and validation cycles.
+
+### Verification
+
+- Reviewed the specification for placeholders, internal contradictions, ambiguous contracts,
+  scope creep, schema changes, unsafe prompt rendering, and missing error/test states.
+- Cross-checked the design with the committed Prompt model, API/session patterns, dashboard
+  structure, roadmap, AGENTS approval boundaries, and Phase 0 security posture.
+
+### Commit
+
+- `docs: add phase 1a prompt registry design`
