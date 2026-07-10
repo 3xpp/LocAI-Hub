@@ -918,8 +918,8 @@ h2 {
   position: relative;
   display: grid;
   min-width: 0;
-  overflow: hidden;
-  place-items: center;
+  align-items: start;
+  overflow: visible;
   padding: clamp(34px, 6vw, 80px);
   background:
     radial-gradient(circle at 70% 20%, rgba(185, 245, 102, 0.06), transparent 24rem),
@@ -973,8 +973,557 @@ h2 {
   line-height: 1.6;
 }
 
+.prompt-editor,
+.editor-state {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 760px);
+  min-width: 0;
+  justify-self: center;
+}
+
+.prompt-editor {
+  border: 1px solid var(--line);
+  padding: clamp(26px, 4vw, 46px);
+  background:
+    linear-gradient(135deg, rgba(185, 245, 102, 0.035), transparent 28%),
+    rgba(14, 20, 17, 0.96);
+  box-shadow: 12px 12px 0 rgba(185, 245, 102, 0.035), 0 28px 70px rgba(0, 0, 0, 0.3);
+}
+
+.prompt-editor::before {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: clamp(64px, 14%, 106px);
+  height: 2px;
+  background: var(--signal);
+  content: "";
+}
+
+.prompt-editor__heading {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 34px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 25px;
+}
+
+.prompt-editor__heading > div {
+  min-width: 0;
+}
+
+.prompt-editor__heading h2 {
+  max-width: 100%;
+  margin-bottom: 0;
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
+  overflow-wrap: anywhere;
+}
+
+.prompt-editor form {
+  display: grid;
+  min-width: 0;
+  gap: 25px;
+}
+
+.editor-field,
+.tag-input {
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+  color: var(--muted-high);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.editor-field > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: baseline;
+}
+
+.editor-field small {
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: 0.04em;
+}
+
+.editor-field .editor-field__feedback {
+  min-height: 1.4em;
+  margin-top: -3px;
+  color: var(--muted);
+  font-size: 0.57rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.editor-field:has([aria-invalid="true"]) .editor-field__feedback {
+  color: #ffad9d;
+}
+
+.editor-field input,
+.editor-field textarea,
+.tag-input__control {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
+  background: #090e0c;
+  box-shadow: inset 3px 0 0 transparent;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.editor-field input,
+.editor-field textarea,
+.tag-input__control input {
+  outline: 0;
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+
+.editor-field input {
+  min-height: 49px;
+  padding: 12px 14px;
+  font-size: 0.94rem;
+}
+
+.editor-field textarea {
+  min-height: 330px;
+  padding: 16px;
+  resize: vertical;
+  font-size: 0.91rem;
+  line-height: 1.62;
+  tab-size: 2;
+}
+
+.editor-field input::placeholder,
+.editor-field textarea::placeholder,
+.tag-input__control input::placeholder {
+  color: #65716b;
+  opacity: 1;
+}
+
+.editor-field:focus-within > span,
+.tag-input:focus-within > label {
+  color: var(--signal);
+}
+
+.editor-field input:focus-visible,
+.editor-field textarea:focus-visible,
+.tag-input__control:focus-within {
+  border-color: var(--signal);
+  box-shadow: inset 3px 0 0 var(--signal), 0 0 0 1px rgba(185, 245, 102, 0.08);
+  background: #0c120f;
+}
+
+.editor-field input[aria-invalid="true"],
+.editor-field textarea[aria-invalid="true"],
+.editor-field input:user-invalid,
+.editor-field textarea:user-invalid,
+.tag-input__control:has(input[aria-invalid="true"]) {
+  border-color: var(--offline);
+  box-shadow: inset 3px 0 0 var(--offline);
+}
+
+.editor-field input:disabled,
+.editor-field textarea:disabled,
+.tag-input__control:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.58;
+  background: #0b0f0e;
+}
+
+.tag-input__control {
+  display: flex;
+  min-height: 52px;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.tag-input__control input {
+  min-width: min(180px, 100%);
+  min-height: 30px;
+  flex: 1 1 180px;
+  border: 0;
+  padding: 3px 4px;
+  color: var(--ink);
+  background: transparent;
+  font-size: 0.84rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: stretch;
+  border: 1px solid #425047;
+  color: var(--signal);
+  background: #111815;
+  font-size: 0.57rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.tag-chip > span {
+  min-width: 0;
+  padding: 7px 8px;
+  overflow-wrap: anywhere;
+}
+
+.tag-chip button {
+  display: grid;
+  width: 29px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid #425047;
+  color: var(--muted-high);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.tag-chip button:hover:not(:disabled) {
+  color: #11140f;
+  background: var(--signal);
+}
+
+.tag-chip button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.tag-input__feedback {
+  min-height: 1.4em;
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.57rem;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.editor-timestamps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+}
+
+.editor-timestamps > div {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #0c110f;
+}
+
+.editor-timestamps dt {
+  margin-bottom: 6px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.editor-timestamps dd {
+  margin-bottom: 0;
+  overflow: hidden;
+  color: var(--muted-high);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-status {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 13px;
+  color: var(--pending);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.editor-status span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.editor-status span:last-child:not(:first-child) {
+  color: var(--signal);
+  text-align: right;
+}
+
+.editor-error {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--offline) 52%, var(--line));
+  padding: 12px 14px;
+  color: #ffb2a4;
+  background: rgba(255, 128, 104, 0.06);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
+.editor-error span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.editor-error button,
+.editor-state__actions button,
+.editor-actions button,
+.editor-back,
+.confirm-dialog__actions button {
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 10px 13px;
+  color: var(--muted-high);
+  background: #111815;
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease,
+    transform 150ms ease;
+}
+
+.editor-error button:hover,
+.editor-state__actions button:hover,
+.editor-actions button:hover:not(:disabled),
+.editor-back:hover,
+.confirm-dialog__actions button:hover:not(:disabled) {
+  border-color: var(--signal);
+  color: var(--ink);
+  background: #182019;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding-top: 3px;
+}
+
+.editor-actions > div {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.editor-actions button:disabled,
+.confirm-dialog__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.43;
+}
+
+.editor-actions .editor-save {
+  border-color: var(--signal);
+  color: #10150e;
+  background: var(--signal);
+  box-shadow: 3px 3px 0 rgba(185, 245, 102, 0.12);
+}
+
+.editor-actions .editor-save:hover:not(:disabled) {
+  color: #10150e;
+  background: var(--signal-bright);
+  transform: translate(2px, 2px);
+}
+
+.editor-actions .editor-save:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: #171d1a;
+  box-shadow: none;
+}
+
+.editor-actions .editor-delete {
+  border-color: color-mix(in srgb, var(--offline) 55%, var(--line));
+  color: #ff9d8b;
+  background: rgba(255, 128, 104, 0.035);
+}
+
+.editor-actions .editor-delete:hover:not(:disabled) {
+  border-color: var(--offline);
+  color: #160d0b;
+  background: var(--offline);
+}
+
+.editor-back {
+  display: none;
+  flex: none;
+}
+
+.editor-state {
+  display: grid;
+  min-height: 440px;
+  place-content: center;
+  justify-items: start;
+  border: 1px solid var(--line);
+  padding: clamp(30px, 6vw, 58px);
+  background: rgba(14, 20, 17, 0.93);
+}
+
+.editor-state h2 {
+  max-width: 520px;
+  margin-bottom: 16px;
+  font-size: clamp(2.5rem, 5vw, 4.4rem);
+  overflow-wrap: anywhere;
+}
+
+.editor-state > p:not(.eyebrow) {
+  max-width: 520px;
+  margin-bottom: 22px;
+  color: var(--muted-high);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.editor-state__pulse {
+  width: 44px;
+  height: 3px;
+  margin-bottom: 24px;
+  background: var(--pending);
+  box-shadow: 0 0 18px rgba(242, 200, 95, 0.45);
+  animation: editor-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.editor-state--error {
+  border-color: color-mix(in srgb, var(--offline) 45%, var(--line));
+}
+
+.editor-state--error .eyebrow {
+  color: var(--offline);
+}
+
+.editor-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.confirm-dialog {
+  width: min(520px, calc(100% - 32px));
+  max-width: none;
+  border: 1px solid color-mix(in srgb, var(--offline) 52%, var(--line));
+  border-radius: 0;
+  padding: 0;
+  color: var(--ink);
+  background: #0c110f;
+  box-shadow: 16px 16px 0 rgba(255, 128, 104, 0.08), 0 32px 100px rgba(0, 0, 0, 0.72);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(3, 5, 4, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+.confirm-dialog__body {
+  position: relative;
+  padding: clamp(28px, 6vw, 48px);
+  background:
+    linear-gradient(145deg, rgba(255, 128, 104, 0.06), transparent 35%),
+    #0c110f;
+}
+
+.confirm-dialog__body::before {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 92px;
+  height: 3px;
+  background: var(--offline);
+  content: "";
+}
+
+.confirm-dialog .eyebrow {
+  color: var(--offline);
+}
+
+.confirm-dialog h2 {
+  margin-bottom: 19px;
+  font-size: clamp(2.5rem, 8vw, 4.25rem);
+}
+
+.confirm-dialog__body > p:not(.eyebrow) {
+  margin-bottom: 28px;
+  color: var(--muted-high);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.confirm-dialog strong {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.confirm-dialog__actions .danger-button {
+  border-color: var(--offline);
+  color: #160d0b;
+  background: var(--offline);
+}
+
+.confirm-dialog__actions .danger-button:hover:not(:disabled) {
+  border-color: #ff9c89;
+  color: #160d0b;
+  background: #ff9c89;
+}
+
 .registry-footer {
   padding-top: 18px;
+}
+
+.registry-announcement {
+  margin: 14px 0 0;
+  border-left: 2px solid var(--signal);
+  padding: 9px 12px;
+  color: var(--signal);
+  background: rgba(185, 245, 102, 0.045);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+[data-registry-heading]:focus-visible,
+.prompt-editor h2:focus-visible,
+.editor-state h2:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 6px;
 }
 
 .footer {
@@ -1001,6 +1550,20 @@ h2 {
 
   to {
     background-position: -120% 0;
+  }
+}
+
+@keyframes editor-pulse {
+  from {
+    opacity: 0.42;
+    transform: scaleX(0.64);
+    transform-origin: left;
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+    transform-origin: left;
   }
 }
 
@@ -1040,6 +1603,10 @@ h2 {
     grid-template-columns: 1fr;
   }
 
+  .registry-shell {
+    min-height: 0;
+  }
+
   .registry-header {
     gap: 24px;
   }
@@ -1055,6 +1622,12 @@ h2 {
 
   .registry-workbench {
     min-height: 430px;
+    padding: clamp(34px, 7vw, 58px);
+  }
+
+  .prompt-editor,
+  .editor-state {
+    width: 100%;
   }
 }
 
@@ -1144,6 +1717,11 @@ h2 {
     margin: 0 -1px;
   }
 
+  .registry-shell[data-mobile-pane="list"] .registry-workbench,
+  .registry-shell[data-mobile-pane="editor"] .registry-rail {
+    display: none;
+  }
+
   .registry-rail {
     padding: 22px 17px 20px;
   }
@@ -1167,12 +1745,137 @@ h2 {
   }
 
   .registry-workbench {
-    min-height: 360px;
-    padding: 24px;
+    min-height: 0;
+    padding: 18px 12px 24px;
   }
 
   .workbench-placeholder {
     padding: 30px 24px;
+  }
+
+  .prompt-editor {
+    max-width: 100%;
+    padding: 27px 17px 20px;
+    box-shadow: none;
+  }
+
+  .prompt-editor__heading {
+    flex-direction: column;
+    gap: 17px;
+    margin-bottom: 27px;
+    padding-bottom: 20px;
+  }
+
+  .prompt-editor__heading h2 {
+    font-size: clamp(2.35rem, 13vw, 3.65rem);
+  }
+
+  .editor-back {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    order: -1;
+  }
+
+  .prompt-editor form {
+    gap: 21px;
+  }
+
+  .editor-field input,
+  .editor-field textarea,
+  .tag-input__control input {
+    font-size: 16px;
+  }
+
+  .editor-field textarea {
+    min-height: 310px;
+    padding: 14px;
+  }
+
+  .tag-input__control {
+    padding: 7px;
+  }
+
+  .tag-input__control input {
+    min-width: 0;
+    flex-basis: 150px;
+  }
+
+  .editor-timestamps {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-timestamps dd {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .editor-status,
+  .editor-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editor-status span:last-child:not(:first-child) {
+    text-align: left;
+  }
+
+  .editor-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .editor-actions > span:empty {
+    display: none;
+  }
+
+  .editor-actions > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .editor-actions button {
+    min-height: 46px;
+  }
+
+  .editor-delete {
+    align-self: flex-start;
+  }
+
+  .editor-state {
+    min-height: 430px;
+    padding: 36px 22px;
+  }
+
+  .editor-state__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editor-state__actions button {
+    min-height: 44px;
+  }
+
+  .confirm-dialog {
+    width: calc(100% - 24px);
+    margin: auto;
+  }
+
+  .confirm-dialog__body {
+    padding: 30px 22px 22px;
+  }
+
+  .confirm-dialog h2 {
+    font-size: clamp(2.45rem, 14vw, 3.8rem);
+  }
+
+  .confirm-dialog__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .confirm-dialog__actions button {
+    min-height: 46px;
   }
 }
 

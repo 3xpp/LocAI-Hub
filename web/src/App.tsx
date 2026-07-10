@@ -96,6 +96,11 @@ export default function App() {
 
   const refreshing = health.loading || ollama.loading || models.loading
 
+  const showOverview = () => {
+    if (activeView === 'prompts' && !promptRegistry.confirmDiscard()) return
+    setActiveView('overview')
+  }
+
   return (
     <main className="dashboard">
       <header className="masthead">
@@ -110,7 +115,7 @@ export default function App() {
             <button
               type="button"
               aria-current={activeView === 'overview' ? 'page' : undefined}
-              onClick={() => setActiveView('overview')}
+              onClick={showOverview}
             >
               Overview
             </button>
@@ -123,7 +128,7 @@ export default function App() {
             </button>
           </nav>
           <p className="node-label">
-            <span aria-hidden="true" /> Local node / read only
+            <span aria-hidden="true" /> Local node / private
           </p>
         </div>
       </header>

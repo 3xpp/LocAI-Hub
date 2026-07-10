@@ -614,3 +614,58 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add searchable prompt registry`
+
+## 2026-07-10 — Phase 1A prompt editor and safe deletion
+
+**Status:** Complete
+
+### Added
+
+- Added create and edit workspaces with title/content validation, Unicode code-point counters,
+  controlled canonical tags, persisted timestamps, explicit Save, raw-content Copy, and fixed
+  success/error status messages.
+- Added independent list, detail, mutation, and clipboard completion boundaries so late requests
+  cannot replace another prompt, erase a draft, or announce a copy result in the wrong record.
+- Added one shared unsaved-change gate for row selection, New, Overview, mobile Back, and missing
+  record recovery, including browser-close protection for every visible pending tag buffer.
+- Added a native modal hard-delete confirmation with safe initial focus, Escape/Cancel behavior,
+  persisted-title warning, pending-state locking, delete completion announcement, and surviving
+  focus restoration.
+- Added responsive list/editor pane switching, slow-detail focus handling, Back focus fallback, and
+  a complete industrial editor treatment without a component library or rendered prompt markup.
+- Added 26 editor/component and end-to-end registry cases on top of the existing frontend suites,
+  covering create/update adoption, failures, shortcuts, clipboard ordering, dirty exits,
+  beforeunload, stale detail, 404 recovery, delete outcomes, tags, dialogs, and mobile focus.
+
+### Decisions
+
+- Treat any nonempty tag input buffer as unsaved work, even when it contains only whitespace; an
+  uncommitted valid buffer is normalized and included automatically on Save.
+- Keep full selected prompt data and its immutable baseline independent of filtered list summaries,
+  and block editor exits while a mutation outcome may be uncertain.
+- Keep raw prompt content in a textarea and clipboard write only; Phase 1A does not render Markdown,
+  execute prompts, retry mutations automatically, or expose server validation bodies.
+- Use native `dialog.showModal()` for destructive confirmation and perform post-render list focus
+  restoration after the modal leaves the browser top layer.
+
+### Verification
+
+- Frontend tests passed: 5 files, 61 tests.
+- Frontend ESLint and TypeScript project-reference type checking passed without warnings.
+- The production frontend build passed with 41 transformed modules, a 229.32 kB JavaScript bundle
+  (70.84 kB gzip), and 28.80 kB CSS (6.23 kB gzip).
+- Disposable-database Firefox smoke passed real create/save/delete, canonical pending tags, native
+  Cancel and Escape, safe dialog focus, delete announcement/focus, mobile list/editor/Back focus,
+  and zero horizontal overflow at 320, 600, 601, and 1280 px.
+- Read-only safety review found whitespace-buffer data loss, hidden mobile loading focus, missing
+  delete announcement/focus fallback, and stale clipboard completion risks; each received a
+  regression and was resolved before commit.
+- The first real-browser delete-focus check exposed that a timer could run while the native dialog
+  still owned the top layer. Moving focus restoration to a post-render effect fixed the browser-only
+  race; the repeated Firefox flow and native Escape check passed.
+- No `.env`, secret, project database, Docker socket, prompt execution, or unsafe HTML path was read,
+  created, or added.
+
+### Commit
+
+- `feat: add prompt editor and safe deletion`

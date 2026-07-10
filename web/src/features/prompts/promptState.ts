@@ -32,13 +32,19 @@ function unicodeCaseFold(value: string): string {
   }).join('')
 }
 
+export const promptTextLength = (value: string) => Array.from(value).length
+
+export function normalizePromptTag(value: string): string {
+  if (value.includes(',')) throw new Error('Tags cannot contain commas')
+  if (/\p{C}/u.test(value)) throw new Error('Tags cannot contain control characters')
+  const normalized = value.trim().replace(/\s+/gu, ' ').split(' ').map(unicodeCaseFold).join(' ')
+  if (normalized.length === 0) throw new Error('Enter a tag first')
+  if (promptTextLength(normalized) > 30) throw new Error('Tags can contain at most 30 characters')
+  return normalized
+}
+
 const normalizeTagForComparison = (tag: string) =>
-  tag
-    .trim()
-    .replace(/\s+/gu, ' ')
-    .split(' ')
-    .map(unicodeCaseFold)
-    .join(' ')
+  tag.trim().replace(/\s+/gu, ' ').split(' ').map(unicodeCaseFold).join(' ')
 
 const normalizeTagsForComparison = (tags: string[]) => {
   const seen = new Set<string>()

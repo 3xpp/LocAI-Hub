@@ -3,12 +3,25 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from '../../App'
-import { listPrompts, type PromptListResponse, type PromptSummary } from '../../api/prompts'
+import {
+  createPrompt,
+  deletePrompt,
+  getPrompt,
+  listPrompts,
+  updatePrompt,
+  type Prompt,
+  type PromptListResponse,
+  type PromptSummary,
+} from '../../api/prompts'
 import { PromptRegistry } from './PromptRegistry'
 import { usePromptRegistry } from './usePromptRegistry'
 
 vi.mock('../../api/prompts', () => ({
+  createPrompt: vi.fn(),
+  deletePrompt: vi.fn(),
+  getPrompt: vi.fn(),
   listPrompts: vi.fn(),
+  updatePrompt: vi.fn(),
 }))
 
 vi.mock('../../api/client', () => ({
@@ -36,6 +49,15 @@ const summary = (id: number, title: string, tags = ['code']): PromptSummary => (
   updated_at: timestamp,
 })
 
+const prompt = (id: number, title: string, content = `${title} full content`): Prompt => ({
+  id,
+  title,
+  content,
+  tags: ['code'],
+  created_at: timestamp,
+  updated_at: timestamp,
+})
+
 const page = (
   items: PromptSummary[],
   total = items.length,
@@ -59,9 +81,21 @@ function RegistryHarness() {
 }
 
 const listPromptsMock = vi.mocked(listPrompts)
+const getPromptMock = vi.mocked(getPrompt)
+const createPromptMock = vi.mocked(createPrompt)
+const updatePromptMock = vi.mocked(updatePrompt)
+const deletePromptMock = vi.mocked(deletePrompt)
 
 beforeEach(() => {
   listPromptsMock.mockReset()
+  getPromptMock.mockReset()
+  createPromptMock.mockReset()
+  updatePromptMock.mockReset()
+  deletePromptMock.mockReset()
+  getPromptMock.mockImplementation((id) => Promise.resolve(prompt(id, `Prompt ${id}`)))
+  createPromptMock.mockResolvedValue(prompt(10, 'Created prompt'))
+  updatePromptMock.mockResolvedValue(prompt(1, 'Updated prompt'))
+  deletePromptMock.mockResolvedValue(undefined)
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockImplementation((query: string) => ({
@@ -96,7 +130,7 @@ describe('Prompt Registry list', () => {
 
     firstPage.resolve(page([summary(1, 'Code review')]))
     expect(await screen.findByRole('button', { name: /Code review/ })).toBeInTheDocument()
-    expect(screen.getByText('Selected record')).toBeInTheDocument()
+    expect(await screen.findByText('Selected record')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Overview' }))
     expect(screen.getByRole('heading', { name: /local stack/i })).toBeInTheDocument()
@@ -276,10 +310,10 @@ describe('Prompt Registry list', () => {
 
     render(<RegistryHarness />)
     await user.click(screen.getByRole('button', { name: 'New prompt' }))
-    expect(screen.getByText('New draft')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'New prompt' })).toBeInTheDocument()
 
     await act(async () => firstPage.resolve(page([summary(1, 'Should not select')])))
-    expect(screen.getByText('New draft')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'New prompt' })).toBeInTheDocument()
     expect(screen.queryByText('Selected record')).not.toBeInTheDocument()
   })
 

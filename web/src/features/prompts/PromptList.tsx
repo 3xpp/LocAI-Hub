@@ -16,11 +16,13 @@ const updatedLabel = (value: string) =>
 function PromptRow({
   prompt,
   selected,
+  disabled,
   onSelect,
   onTag,
 }: {
   prompt: PromptSummary
   selected: boolean
+  disabled: boolean
   onSelect: () => void
   onTag: (tag: string) => void
 }) {
@@ -29,7 +31,9 @@ function PromptRow({
       <button
         type="button"
         className="prompt-row__select"
+        data-prompt-id={prompt.id}
         aria-current={selected ? 'true' : undefined}
+        disabled={disabled}
         onClick={onSelect}
       >
         <span className="prompt-row__heading">
@@ -71,6 +75,8 @@ export function PromptList({ controller }: PromptListProps) {
         <button
           type="button"
           className="registry-new"
+          data-new-prompt
+          disabled={controller.mutationStatus !== 'idle'}
           onClick={controller.startNewPrompt}
         >
           <span aria-hidden="true">＋</span> New prompt
@@ -153,6 +159,7 @@ export function PromptList({ controller }: PromptListProps) {
               key={prompt.id}
               prompt={prompt}
               selected={prompt.id === controller.selectedId}
+              disabled={controller.mutationStatus !== 'idle'}
               onSelect={() => controller.selectPrompt(prompt.id)}
               onTag={controller.applyTag}
             />
