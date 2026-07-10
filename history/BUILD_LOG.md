@@ -312,3 +312,49 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add setup guide security notes and roadmap`
+
+## 2026-07-10 — Phase 0 final acceptance validation
+
+**Status:** Complete
+
+### Scope
+
+- Re-ran the complete Phase 0 acceptance sequence against the clean `main` worktree without
+  changing application code, configuration, tests, or documentation outside this journal.
+- Disabled automatic Compose environment-file loading, supplied the explicit safe offline Ollama
+  origin `http://127.0.0.1:9` to every Make/Compose invocation, and used
+  `docker compose --env-file /dev/null` for Compose lifecycle commands. No real environment or
+  secret file was read.
+
+### Verification
+
+- Literal `make install` passed: uv resolved 58 packages and checked 56 installed packages; pnpm
+  found the lockfile and dependencies up to date. pnpm repeated its non-fatal notice that the
+  dependency build script for esbuild is not approved.
+- Literal `make test` passed with 21 tests. Literal `make test-e2e` passed with six tests. Both
+  reported only the already documented dependency-level Starlette TestClient deprecation warning.
+- Literal `make lint` passed Ruff and ESLint. Literal `make typecheck` passed strict mypy across 15
+  backend source files and the frontend TypeScript project.
+- `cd web && pnpm build` passed, transforming 33 modules and producing the Vite distribution.
+- Literal `make build` passed both Docker image builds and the repeated frontend production build.
+  Compose again reported the non-fatal missing-Buildx/Bake warning and successfully used Docker's
+  default builder.
+- With `DATABASE_URL` unset, the default Alembic configuration upgraded a task-created ignored
+  `backend/local-ai-hub.db` to `0001_create_prompts`; `alembic check` reported no new upgrade
+  operations; downgrade to `base` passed; the disposable database and journal were removed.
+- A directly launched API with the safe offline Ollama origin returned the exact healthy service
+  payload from `/health`, `online: false` with a safe non-empty error from
+  `/api/ollama/status`, and an empty model list with a safe non-empty error from
+  `/api/ollama/models`. The API process shut down normally and released its listener.
+- Compose started both services with an empty explicit environment file. Direct API health,
+  dashboard HTML, Vite-proxied health, proxied offline Ollama status, and proxied empty/error model
+  responses all passed. A normal `docker compose down` removed both containers and the network,
+  released both localhost ports, retained all three named volumes, and left zero project
+  containers.
+- The final artifact audit found no untracked files before this journal entry, no tracked secret,
+  database, cache, dependency, build-output, or bytecode artifacts, and no stray database or key
+  files outside ignored dependency/tool-output directories. `git diff --check` passed.
+
+### Commit
+
+- `test: record phase 0 acceptance validation`
