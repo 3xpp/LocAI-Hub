@@ -84,3 +84,53 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `chore: bootstrap local ai workflow hub monorepo`
+
+## 2026-07-10 — SQLite prompt persistence foundation
+
+**Status:** Complete
+
+### Added
+
+- Added process-environment settings with safe local defaults for SQLite and Ollama.
+- Added the typed SQLAlchemy `Prompt` model with `id`, `title`, `content`, optional plain-text
+  `tags`, and created/updated UTC timestamps.
+- Added a focused SQLAlchemy UTC datetime type that normalizes aware inputs and restores UTC
+  awareness after SQLite returns naive timestamp values.
+- Added reusable database engine and session factories, including SQLite thread handling.
+- Added Alembic configuration, migration environment, revision template, and the initial
+  `prompts` table migration.
+- Added isolated persistence and full migration lifecycle tests; prompt API endpoints remain
+  deferred to Phase 1.
+
+### Decisions
+
+- Kept the initial schema to the approved Phase 0 prompt fields and avoided relationships,
+  structured tag storage, or HTTP CRUD scope.
+- Read configuration only from the process environment; the backend does not load or inspect
+  local secret files.
+- Defaulted SQLite directly to `./local-ai-hub.db`, relative to the backend working directory, so
+  a fresh checkout needs no pre-created data directory.
+- Aligned ORM and migration metadata with `CURRENT_TIMESTAMP` server defaults and enabled Alembic
+  server-default comparison so future schema drift is detectable.
+- Escaped percent signs before passing database URLs through Alembic's interpolating
+  configuration layer, preserving valid percent-containing URLs.
+
+### Verification
+
+- Captured the intended TDD failure: the prompt model test initially failed during collection
+  because `local_ai_hub.db.models` did not exist.
+- Review-driven tests then reproduced SQLite's naive datetime result and Alembic's interpolation
+  error for a temporary database filename containing `%20` before their fixes were applied.
+- The prompt test verifies UTC-aware timestamps from fresh sessions and confirms `updated_at`
+  advances after a persisted modification.
+- The migration test upgrades to head, checks its revision, fields, timestamp server defaults,
+  and metadata parity, downgrades to base, then deletes its temporary database.
+- Full pytest, Ruff lint, Ruff formatting, and strict mypy checks passed.
+- An additional `ruff format --check` found one wrapping-only difference in `config.py`; Ruff
+  formatted that file and the final formatting check passed.
+- A plain default-configuration Alembic upgrade and downgrade also succeeded from the backend
+  directory; its ignored SQLite database was removed after verification.
+
+### Commit
+
+- `feat: add sqlite prompt persistence foundation`

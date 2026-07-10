@@ -36,5 +36,4 @@ build:
 	cd web && pnpm build
 
 db-upgrade:
-	mkdir -p backend/data
 	cd backend && uv run alembic upgrade head
