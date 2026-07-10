@@ -772,3 +772,50 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `fix: harden phase 1a acceptance boundaries`
+
+## 2026-07-11 — Phase 1A final acceptance validation
+
+**Status:** Complete
+
+### Validated
+
+- Re-ran the complete backend, frontend, migration, production-build, Docker-build, Compose, and
+  real-browser acceptance matrix from the hardened committed revision.
+- Exercised the prompt registry through both direct API and Vite-proxied routes without requiring a
+  real Ollama server or retaining acceptance prompt data.
+- Completed independent acceptance-matrix and artifact/security reviews with no remaining blockers.
+
+### Verification
+
+- Literal `make install` passed from both committed lockfiles. pnpm repeated its known non-blocking
+  ignored-esbuild-build-script notice.
+- Full backend tests passed: 77 tests. Backend end-to-end tests passed: 34 tests. Both commands emitted
+  only the already documented Starlette `TestClient` deprecation warning.
+- Frontend behavior passed: 5 files and 61 tests. Root lint and typecheck targets passed across Ruff,
+  ESLint, strict mypy over 21 source files, and TypeScript project references.
+- Ruff formatting verification passed for 32 files. The production frontend build passed with 41
+  transformed modules, a 229.32 kB JavaScript bundle (70.84 kB gzip), and 28.82 kB CSS (6.23 kB gzip).
+- A disposable SQLite database upgraded to Alembic head and `alembic check` reported no new upgrade
+  operations; the database and sidecar files were removed afterward.
+- Both Docker images rebuilt successfully from frozen locks on the exact acceptance revision. The
+  known non-blocking default-builder fallback remained documented.
+- Headless Firefox exercised real create, search, combined exact-tag filtering, filter clearing,
+  detail retrieval, exact raw-content copy, update, delete, repeated-delete 404, disabled empty Copy,
+  settled mobile editor focus, and 320 px overflow behavior. Every assertion passed.
+- Compose direct and proxied health passed. With a safe unreachable local Ollama URL, direct and
+  proxied status returned the expected graceful offline HTTP 200 response.
+- Compose prompt smoke passed direct create/update, proxied detail/search/delete, and repeated-delete
+  404. The created record was removed, the pnpm store resolved to `/pnpm/store/v10`, and no source-tree
+  `.pnpm-store` was created.
+- Normal Compose teardown left zero project containers and retained exactly four intended named
+  volumes: `api-venv`, `hub-data`, `web-node-modules`, and `web-pnpm-store`.
+- Final artifact and security review found no tracked or untracked real environment file, secret,
+  project database, cache, dependency directory, build output, or bytecode. Host publishing remains
+  loopback-only; no Docker socket/SDK, privileged mode, n8n, cloud AI, prompt execution, Ollama
+  mutation, or unsafe HTML path exists.
+- Exactly one migration remains (`0001_create_prompts`), `git diff --check` passed, and final Git
+  status was verified clean after this acceptance commit.
+
+### Commit
+
+- `test: record phase 1a acceptance validation`
