@@ -27,3 +27,29 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 0 design and build journal`
+
+## 2026-07-10 — Phase 0 implementation plan
+
+**Status:** Complete
+
+### Added
+
+- Converted the approved design into a seven-task, test-first implementation plan.
+- Mapped each planned file to one responsibility and specified exact quality gates.
+- Added the six-stage path from observable MVP to a hardened v1 release.
+
+### Decisions
+
+- The Phase 0 implementation remains one vertical slice, delivered through small conventional commits.
+- The build journal will be updated inside every implementation milestone.
+- Localhost usefulness and network-exposed production readiness are separate maturity targets.
+
+### Verification
+
+- Checked the plan against every section of the approved design.
+- Checked dependency names, API fields, route paths, response nullability, and frontend types for consistency.
+- Scanned for incomplete task markers and ambiguous implementation instructions.
+
+### Commit
+
+- `docs: add phase 0 implementation plan`
