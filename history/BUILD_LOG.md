@@ -134,3 +134,55 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add sqlite prompt persistence foundation`
+
+## 2026-07-10 — FastAPI health and Ollama observation APIs
+
+**Status:** Complete
+
+### Added
+
+- Added `GET /health` with stable service name, version, and healthy status metadata.
+- Added read-only `GET /api/ollama/status` and `GET /api/ollama/models` routes with typed
+  Pydantic response contracts.
+- Added an async httpx Ollama client with a three-second default timeout and injectable transport
+  for isolated tests.
+- Added fail-closed Ollama base URL validation and canonicalization: only credential-free HTTP or
+  HTTPS origins with a host and no query, fragment, or non-root path are accepted.
+- Normalized Ollama model data to name, modification timestamp, and byte size while ignoring
+  unsupported upstream fields and malformed model entries.
+- Added configuration, client, and HTTP contract tests that require neither a real Ollama server
+  nor network access.
+
+### Decisions
+
+- Used Ollama's read-only `/api/tags` endpoint for both reachability and model discovery, avoiding
+  model pulls, deletions, or other administrative controls.
+- Returned HTTP 200 with explicit `online: false` or an empty model list when Ollama is offline so
+  the local dashboard remains usable.
+- Mapped transport, HTTP status, and payload failures to fixed safe messages; low-level exception
+  text and upstream response bodies are never disclosed by these APIs.
+- Invalid or credential-bearing Ollama URLs are never requested or reflected; status responses use
+  the fixed display `Invalid configuration` and both APIs use `Invalid Ollama base URL`.
+- Disabled httpx environment proxy and certificate inheritance with `trust_env=False`, keeping the
+  Ollama request path controlled by explicit application configuration.
+- Kept dependency construction replaceable through FastAPI overrides so external I/O is fully
+  controlled in tests.
+
+### Verification
+
+- Captured the intended TDD failure: the new tests initially failed during collection because the
+  Ollama service and API modules did not exist.
+- Review-driven red tests reproduced unsafe reflection of credential-bearing configuration,
+  requests attempted from malformed URLs, and missing canonical URL display before correction.
+- The completed full backend suite passed with 21 tests, including six end-to-end API and
+  migration tests; external Ollama behavior is exercised only through `httpx.MockTransport`.
+- Regression tests cover malformed schemes and hosts, credentials, non-root paths, queries,
+  fragments, invalid JSON, fixed safe API responses, and canonical valid URL display.
+- `uv run ruff check .`, `uv run ruff format --check .`, and strict `uv run mypy src` passed.
+- Root `make test`, `make test-e2e`, `make lint`, and `make typecheck` passed.
+- The test runner reports one dependency-level Starlette deprecation warning about its TestClient
+  integration; it does not affect the Phase 0 contracts or runtime service.
+
+### Commit
+
+- `feat: add fastapi health and ollama endpoints`
