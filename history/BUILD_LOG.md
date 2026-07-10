@@ -470,3 +470,47 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add prompt registry domain and repository`
+
+## 2026-07-10 — Phase 1A prompt registry API
+
+**Status:** Complete
+
+### Added
+
+- Added explicit Pydantic create, update, full-item, summary, and paginated-list contracts for
+  prompts, including conversion from the existing SQLAlchemy model and legacy-tolerant tag storage.
+- Added create, list, retrieve, complete-update, and permanent-delete routes under `/api/prompts`.
+- Added 28 isolated API cases for CRUD, duplicate titles, raw-content preservation, safe summaries,
+  omitted tags, combined search/filtering, pagination, Unicode search, legacy tags, validation,
+  unknown-field rejection, fixed not-found responses, and error redaction.
+
+### Decisions
+
+- Kept synchronous FastAPI handlers aligned with the synchronous SQLAlchemy session lifecycle.
+- Normalized query and exact-tag filters before repository access, after HTTP parsing, so limits
+  apply to canonical values and validation locations use the public `q` and `tag` names.
+- Returned full prompt content only from item and mutation endpoints; collection responses expose
+  a one-line preview instead.
+- Forbid unknown mutation fields and sanitize shared request-validation responses so misspelled
+  fields fail closed and invalid prompt/query values are never reflected to clients or logs.
+- Used a per-test StaticPool database with the production SQLite text functions and restored only
+  the prompt database dependency override, preventing tests from touching developer data.
+
+### Verification
+
+- Confirmed the new API suite first failed with 23 route-not-found cases before the router existed.
+- The focused prompt API suite passed: 28 tests.
+- The complete backend suite passed: 77 tests, with only the previously documented Starlette
+  TestClient deprecation warning.
+- The backend end-to-end suite passed: 34 tests.
+- Ruff lint passed, Ruff reported all 32 backend Python files formatted, and strict mypy passed
+  across 21 backend source files.
+- The first static-gate run found only formatting in the new API test; it was corrected before the
+  passing gate. Deprecated 422 status naming was also replaced before final verification.
+- A read-only security review found that default validation responses reflected full invalid prompt
+  inputs and ignored unknown write keys. Sanitized 422 responses, strict write models, and
+  non-mutation regressions resolved both blockers before commit.
+
+### Commit
+
+- `feat: add prompt registry api`
