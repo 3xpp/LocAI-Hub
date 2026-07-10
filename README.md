@@ -90,7 +90,7 @@ docker compose down --volumes
 ~~~
 
 At startup, the API applies migrations and synchronizes its uv environment, while the web service
-synchronizes the frozen pnpm lock into the dependency volume before starting Vite. A first start or
+synchronizes the frozen pnpm lock into named dependency volumes before starting Vite. A first start or
 lockfile change may need package-registry access. Normal `docker compose down` retains both
 dependencies and prompt data; do not use `--volumes` merely to refresh packages because it also
 deletes the SQLite volume.

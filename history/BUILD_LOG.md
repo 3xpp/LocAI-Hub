@@ -718,7 +718,8 @@ This journal records what is built, why it changes, and how each milestone is ve
   exact-tag filtering, direct update, proxied delete, and final HTTP 404 with canonical tags and raw
   multiline content preserved.
 - Normal Compose teardown left zero project containers and retained the three named development
-  volumes (`api-venv`, `hub-data`, and `web-node-modules`).
+  dependency/data volumes present at that check; final acceptance adds and verifies the dedicated
+  `web-pnpm-store` volume used to keep generated package data outside the bind-mounted source tree.
 - Documentation diff, link/path, content, and whitespace checks passed. No real `.env`, secret,
   Docker socket, or project database was read or added.
 - Official Vite configuration guidance and the installed Vite package metadata confirmed
@@ -728,7 +729,46 @@ This journal records what is built, why it changes, and how each milestone is ve
   with `CI=true` resolved both cases, repeated proxied health passed, and the observed failure is
   recorded in `docs/FAILURES.md`. The next retained-volume start reported dependencies already up to
   date in 501 ms before Vite became reachable.
+- A committed-state rebuild exposed a 116.51 MB web context and 115 MB final copy layer. Explicit
+  root-directory ignore patterns for generated dependencies/build output and TypeScript build-info
+  files were added; the corrective rebuild is recorded in final acceptance.
 
 ### Commit
 
 - `chore: finalize phase 1a integration`
+
+## 2026-07-11 — Phase 1A acceptance hardening
+
+**Status:** Complete
+
+### Added
+
+- Raised registry and editor placeholder colors to the existing AA-safe muted token and forced full
+  placeholder opacity.
+- Tightened the web Docker context against root dependency/build/store directories and TypeScript
+  build-info, and moved the Compose pnpm store to its own named volume outside the source bind mount.
+- Updated the approved Phase 1A design status from awaiting review to implementation complete.
+
+### Decisions
+
+- Keep frozen pnpm synchronization at web-container startup so a retained `node_modules` volume
+  cannot silently drift from the lockfile; use `CI=true` for non-interactive repair and a separate
+  `/pnpm/store` volume so generated package data never lands in the source tree.
+
+### Verification
+
+- Calculated placeholder contrast at 5.89:1 for registry search and 5.98:1 for editor fields,
+  exceeding the 4.5:1 WCAG AA normal-text threshold.
+- Frontend behavior passed: 5 files and 61 tests. ESLint, TypeScript typecheck, and the production
+  build passed with 41 transformed modules, 229.32 kB JavaScript, and 28.82 kB CSS.
+- The corrected web Docker build context fell from 116.51 MB to 37.45 kB, and the final source-copy
+  layer fell from 115 MB to 258 kB while retaining the frozen dependency layer.
+- Compose proxied health passed with the dedicated store reporting `/pnpm/store/v10`; the bind-mounted
+  source tree contained no pnpm store after startup. Normal teardown removed all project containers
+  and retained the named dependency/data volumes.
+- The actual confirmation stall, rejected offline-only attempt, and Docker-context leak are recorded
+  in `docs/FAILURES.md`. No secret or real environment file was read.
+
+### Commit
+
+- `fix: harden phase 1a acceptance boundaries`

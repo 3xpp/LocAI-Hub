@@ -105,7 +105,25 @@ pnpm store, and pnpm requested confirmation before purging it. The built image's
 every registry tarball needed to reconstruct an emptied modules volume offline.
 
 **Resolution:** Run the startup sync with the frozen lock, an append-only reporter, and `CI=true` so
-the development container handles the required rebuild non-interactively before starting Vite.
+the development container handles the required rebuild non-interactively before starting Vite. Keep
+pnpm's store in a named volume mounted outside the bind-mounted source tree.
 
 **Prevention:** Compose smoke waits for proxied health after startup. Allow package-registry access
 after lockfile changes; do not delete the SQLite volume merely to refresh frontend dependencies.
+
+## 2026-07-11 — Frontend Docker context included generated dependencies
+
+**Status:** Resolved
+
+**Observed:** A final web image rebuild transferred a 116.51 MB context and produced a 115 MB
+`COPY . .` layer even though the source tree itself was small.
+
+**Cause:** The root-name ignore entries did not exclude the generated dependency and build
+directories with the active Docker builder as intended.
+
+**Resolution:** Use explicit root-directory patterns for `/node_modules/`, `/dist/`, and
+`/.pnpm-store/`, and exclude TypeScript build-info files. Mount the Compose pnpm store separately
+from the source tree.
+
+**Prevention:** Final acceptance compares Docker context and layer sizes after dependencies and the
+production bundle have been generated locally.

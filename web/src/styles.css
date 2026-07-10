@@ -666,7 +666,8 @@ h2 {
 }
 
 .registry-search input::placeholder {
-  color: #65716b;
+  color: var(--muted);
+  opacity: 1;
 }
 
 .registry-meta {
@@ -1106,7 +1107,7 @@ h2 {
 .editor-field input::placeholder,
 .editor-field textarea::placeholder,
 .tag-input__control input::placeholder {
-  color: #65716b;
+  color: var(--muted);
   opacity: 1;
 }
 

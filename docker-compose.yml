@@ -30,7 +30,7 @@ services:
       - sh
       - -c
       - >-
-        pnpm install --frozen-lockfile --reporter=append-only &&
+        pnpm install --store-dir=/pnpm/store --frozen-lockfile --reporter=append-only &&
         exec pnpm dev --host 0.0.0.0
     environment:
       CI: "true"
@@ -43,8 +43,10 @@ services:
     volumes:
       - ./web:/app
       - web-node-modules:/app/node_modules
+      - web-pnpm-store:/pnpm/store
 
 volumes:
   api-venv:
   hub-data:
   web-node-modules:
+  web-pnpm-store:

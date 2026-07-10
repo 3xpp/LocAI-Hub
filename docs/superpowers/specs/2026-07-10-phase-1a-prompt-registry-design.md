@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-10
 
-**Status:** Approved design; awaiting written-spec review
+**Status:** Approved; implementation complete
 
 **Sequence:** Phase 1A of 1A Prompt Registry → 1B Workflow Links → 1C Import/Export
 
