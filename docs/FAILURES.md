@@ -91,3 +91,21 @@ This is a factual engineering log, not a list of hypothetical risks. It records 
 **Impact:** The optional screenshot artifact was unavailable. The live FastAPI and Vite servers worked, frontend lint/typecheck/production build passed, and independent code/accessibility reviews passed.
 
 **Current action:** Do not treat this as an application failure. Revisit automated visual capture when a supported browser compositor or browser-test environment is available.
+
+## 2026-07-11 — Compose frontend dependency sync waited for confirmation
+
+**Status:** Resolved
+
+**Observed:** The first attempt to synchronize the persistent frontend dependency volume at container
+startup left `pnpm install` waiting while port 5173 reset connections instead of serving Vite. An
+offline-only retry then failed with `ERR_PNPM_NO_OFFLINE_TARBALL`.
+
+**Cause:** The existing named volume required its modules directory to be rebuilt against the image's
+pnpm store, and pnpm requested confirmation before purging it. The built image's store did not retain
+every registry tarball needed to reconstruct an emptied modules volume offline.
+
+**Resolution:** Run the startup sync with the frozen lock, an append-only reporter, and `CI=true` so
+the development container handles the required rebuild non-interactively before starting Vite.
+
+**Prevention:** Compose smoke waits for proxied health after startup. Allow package-registry access
+after lockfile changes; do not delete the SQLite volume merely to refresh frontend dependencies.

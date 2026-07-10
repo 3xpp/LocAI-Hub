@@ -3,24 +3,31 @@
 A local-first control room for Ollama, reusable prompts, workflow references, and homelab automation.
 
 > [!WARNING]
-> Phase 0 has no authentication. Keep it on your own machine. Do not expose the dashboard or API to a public or untrusted network without authentication, authorization, TLS, and a deployment security review.
+> The app has no authentication. Keep it on your own machine. Prompt CRUD can reveal, change, or
+> permanently delete local data. Do not expose the dashboard or API to a public or untrusted network
+> without authentication, authorization, TLS, and a deployment security review.
 
 ## What it does
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-Phase 0 provides:
+Phase 1A provides:
 
 - backend service health;
 - safe Ollama online/offline status;
 - normalized local Ollama model inventory;
 - distinct loading, empty, offline, and malformed-response states;
 - a SQLite, SQLAlchemy, and Alembic persistence foundation;
-- the initial Prompt data model;
+- complete create, list, retrieve, update, and permanent-delete prompt APIs;
+- server-side prompt search, exact canonical-tag filtering, and deterministic pagination;
+- a responsive prompt registry with raw-text editing, explicit save, dirty-draft protection,
+  clipboard copy, and deletion confirmation;
 - a responsive React dashboard;
-- repeatable uv, pnpm, Make, and Docker Compose workflows.
+- repeatable uv, pnpm, Make, and Docker Compose workflows;
+- backend and frontend behavior tests that do not require a live Ollama server.
 
-It is intentionally read-only around Ollama and does not expose Docker, n8n, shell, model-management, or prompt-management controls.
+It remains intentionally read-only around Ollama and does not expose Docker, n8n, shell,
+model-management, prompt-execution, or cloud-AI controls.
 
 ## Architecture
 
@@ -34,16 +41,22 @@ Vite dashboard (127.0.0.1:5173)
 FastAPI (127.0.0.1:8000)
   |-- health API
   |-- read-only Ollama client --> Ollama /api/tags
-  '-- SQLAlchemy/Alembic -----> SQLite
+  '-- prompt CRUD/search API
+          |
+          '-- SQLAlchemy/Alembic -----> SQLite
 ~~~
 
 Expected Ollama failures are dashboard state, not application crashes. Tests replace Ollama transport with httpx MockTransport and never require a live Ollama server.
+
+Prompt list requests return summaries rather than full content. Search, exact tag filtering, counting,
+and pagination happen in the backend; create and update responses return the canonical values stored by
+the server.
 
 ## Prerequisites
 
 - Python 3.12 or newer
 - [uv](https://docs.astral.sh/uv/)
-- Node.js 20.19 or newer
+- Node.js `^20.19.0` or `>=22.12.0`
 - [pnpm](https://pnpm.io/) 10.x
 - Docker Engine with Docker Compose v2 (required only for the Docker quickstart and image build)
 - Optional: [Ollama](https://ollama.com/) for live status and model data
@@ -75,6 +88,12 @@ Compose retains the SQLite and dependency volumes. To deliberately erase all Com
 ~~~bash
 docker compose down --volumes
 ~~~
+
+At startup, the API applies migrations and synchronizes its uv environment, while the web service
+synchronizes the frozen pnpm lock into the dependency volume before starting Vite. A first start or
+lockfile change may need package-registry access. Normal `docker compose down` retains both
+dependencies and prompt data; do not use `--volumes` merely to refresh packages because it also
+deletes the SQLite volume.
 
 The Compose default points the API at host.docker.internal for Ollama and includes the Linux host-gateway mapping. Ollama must also accept connections from the Docker bridge. Its usual localhost-only binding may not do so. Reconfiguring Ollama to listen on another interface can increase network exposure; apply host firewall rules and never expose it publicly without protection.
 
@@ -110,7 +129,10 @@ Open http://127.0.0.1:5173. Vite proxies backend requests to http://127.0.0.1:80
 
 ## Configuration
 
-The Python application reads process environment variables only. It does not parse a .env file. Export values through your shell or service manager when running without Docker.
+The Python application reads process environment variables only. It does not parse a .env file.
+Vite also disables automatic `.env` loading and reads its development proxy settings only from the
+explicit process environment. Export values through your shell or service manager when running
+without Docker.
 
 Docker Compose follows normal Compose behavior and may load an ignored local .env file automatically. Never commit that file. The committed [.env.example](.env.example) contains safe values for the non-Docker localhost workflow; its Ollama localhost value is not the Compose container default.
 
@@ -128,6 +150,11 @@ OLLAMA_BASE_URL accepts only a credential-free HTTP or HTTPS origin with a host 
 | GET | /health | Exact service health, name, and version payload. |
 | GET | /api/ollama/status | Ollama reachability, safe configured-origin display, and normalized error. |
 | GET | /api/ollama/models | Normalized name, modification time, and byte size for installed models. |
+| GET | /api/prompts | Server-filtered prompt summaries. Supports `q`, `tag`, `limit`, and `offset`. |
+| POST | /api/prompts | Create one prompt and return its canonical full representation. |
+| GET | /api/prompts/{prompt_id} | Retrieve one prompt with full raw-text content. |
+| PUT | /api/prompts/{prompt_id} | Replace all editable fields and return canonical server values. |
+| DELETE | /api/prompts/{prompt_id} | Permanently delete one prompt and return HTTP 204. |
 
 Ollama being offline is an expected HTTP 200 response:
 
@@ -141,6 +168,11 @@ Ollama being offline is an expected HTTP 200 response:
 
 A reachable Ollama instance with no models returns an empty models array and a null error. An offline or invalid configuration returns an empty array with a non-null safe error.
 
+Prompt titles are trimmed and prompt content remains raw text. Tags are whitespace-normalized,
+case-folded, deduplicated canonical values; commas and control characters are rejected. A list search
+matches title, content, and tags on the server. An exact tag filter can be combined with search, and
+missing individual prompts return HTTP 404.
+
 ## Common commands
 
 | Command | Purpose |
@@ -152,6 +184,7 @@ A reachable Ollama instance with no models returns an empty models array and a n
 | make db-upgrade | Apply Alembic migrations. |
 | make test | Run the complete backend test suite. |
 | make test-e2e | Run backend end-to-end contract and migration tests. |
+| make test-web | Run the frontend Vitest behavior suite once. |
 | make lint | Run Ruff and ESLint. |
 | make typecheck | Run strict mypy and TypeScript checks. |
 | make format | Format and auto-fix backend Python files. |
@@ -159,46 +192,54 @@ A reachable Ollama instance with no models returns an empty models array and a n
 
 ## Validation
 
-Phase 0 currently verifies:
+Phase 1A currently verifies:
 
 - exact health and Ollama HTTP contracts;
 - connection, HTTP, invalid JSON, invalid URL, and credential-reflection failures;
 - model normalization without real network access;
 - Prompt persistence, UTC timestamp behavior, and updated timestamps;
+- prompt normalization, CRUD, search, exact tag filtering, pagination, validation, and not-found contracts;
+- runtime validation of prompt list/detail responses at the browser boundary;
+- prompt-registry loading, filtering, editing, keyboard save, dirty navigation guards, clipboard feedback,
+  mobile navigation, and confirmed deletion behavior;
 - Alembic upgrade, drift check, and downgrade;
-- Ruff, strict mypy, ESLint, TypeScript, and Vite production build;
+- Ruff, strict mypy, ESLint, Vitest, TypeScript, and Vite production build;
 - Compose image build, migration startup, direct/proxied health, offline Ollama, and graceful shutdown.
 
 ## Security posture
 
 - Host development ports bind to 127.0.0.1.
-- There is no authentication in Phase 0.
+- There is no authentication.
 - There is no Docker socket or Docker SDK access.
 - There is no n8n API or API-key usage.
 - Ollama requests ignore ambient proxy variables and use only explicit validated configuration.
 - Real .env files, local databases, dependency directories, and common secret-file formats are ignored.
-- Prompt content and local model interactions may contain sensitive information.
+- Prompt list, detail, create, update, delete, and clipboard actions can expose or change sensitive local
+  prompt data to any client that can reach the unauthenticated app.
 
 Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure or integration scope.
 
 ## Current limitations
 
-- Prompt persistence exists, but prompt CRUD endpoints and UI are deferred.
-- Workflow references and search are not implemented.
+- Prompt version history, archive/restore, soft deletion, and secure deletion are not implemented.
+- Hard-deleted prompts cannot be restored by the app; portable import/export is deferred to Phase 1C.
+- Workflow links are deferred to Phase 1B.
 - Ollama integration is observation-only; there is no run, pull, or delete action.
 - n8n and container observability are not implemented.
 - No authentication, multi-user support, production proxy, or public deployment profile exists.
 - SQLite is intended for this local MVP, not concurrent multi-node deployment.
-- Frontend unit tests are deferred; Phase 0 uses strict type, lint, production-build, and API contract gates.
+- Prompt content is raw text only; there is no Markdown rendering, templating, execution, or cloud sync.
 
 ## Roadmap to production-ready v1
 
-1. **Phase 0 — Observable MVP (current):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
-2. **Phase 1 — Usable registry:** prompt CRUD, workflow links, search, tags, validation, and local import/export.
-3. **Phase 2 — Read-only integrations:** explicitly approved n8n and service/container visibility through constrained interfaces.
-4. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
-5. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
-6. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
+1. **Phase 0 — Observable MVP (complete):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
+2. **Phase 1A — Prompt Registry (complete/current):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
+3. **Phase 1B — Workflow Links (next):** separately designed local workflow references and navigation.
+4. **Phase 1C — Import/Export:** separately designed portable local prompt and workflow data.
+5. **Phase 2 — Read-only integrations:** explicitly approved n8n and service/container visibility through constrained interfaces.
+6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
+7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
+8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
 
 The project should be useful on a private localhost setup during Phases 1–2. Safe network exposure is a different standard and belongs around Phases 4–5.
 
@@ -210,6 +251,8 @@ The project should be useful on a private localhost setup during Phases 1–2. S
 - [Chronological build log](history/BUILD_LOG.md)
 - [Approved Phase 0 design](docs/superpowers/specs/2026-07-10-phase-0-mvp-design.md)
 - [Phase 0 implementation plan](docs/superpowers/plans/2026-07-10-phase-0-mvp.md)
+- [Approved Phase 1A Prompt Registry design](docs/superpowers/specs/2026-07-10-phase-1a-prompt-registry-design.md)
+- [Phase 1A Prompt Registry implementation plan](docs/superpowers/plans/2026-07-10-phase-1a-prompt-registry.md)
 
 ## License
 

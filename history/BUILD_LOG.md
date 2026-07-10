@@ -669,3 +669,66 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add prompt editor and safe deletion`
+
+## 2026-07-11 — Phase 1A integration documentation and regression gates
+
+**Status:** Complete
+
+### Added
+
+- Updated the README from the Phase 0 foundation to the completed Phase 1A product, including
+  prompt CRUD/search/filter behavior, all five prompt routes, frontend tests, current limitations,
+  and the separately gated Phase 1B then Phase 1C roadmap.
+- Recorded canonical tag storage, backend-owned filtering, explicit save, hard deletion, and
+  development-only frontend behavior tooling in the architecture decision log.
+- Expanded the security notes for unauthenticated prompt read/write/delete exposure, exact clipboard
+  copies, irreversible application deletion, SQLite/backup remnants, and the unchanged localhost
+  deployment boundary.
+- Strengthened future agent guidance so prompt UI behavior changes must run `make test-web` before
+  commit.
+- Disabled Vite's automatic `.env` loading so frontend development configuration uses only explicit
+  process variables; corrected the documented Node range to Vite's installed engine contract.
+- Made Compose synchronize the frozen pnpm lock into its persistent dependency volume before Vite
+  starts in non-interactive mode, preventing a stale volume after frontend dependency changes
+  without deleting prompt data.
+
+### Decisions
+
+- Recorded the observed Compose dependency-volume confirmation stall and its non-interactive
+  resolution in `docs/FAILURES.md`; no hypothetical incidents were added.
+- Kept documentation explicit that hard delete is not secure erasure and that Phase 1C import/export
+  does not yet provide backup or restore guarantees.
+
+### Verification
+
+- Literal `make install` passed from the committed locks; pnpm repeated its known non-blocking
+  ignored-esbuild-build-script notice without changing approval state.
+- Full backend tests passed: 77 tests with the already documented Starlette deprecation warning;
+  backend end-to-end tests passed: 34 tests with the same warning.
+- Frontend behavior tests passed: 5 files, 61 tests. Root lint and typecheck targets passed across
+  Ruff, ESLint, strict mypy over 21 source files, and TypeScript project references.
+- A disposable SQLite database upgraded to Alembic head, and `alembic check` reported no new upgrade
+  operations; the disposable file was removed afterward.
+- Both Compose images built from frozen locks. Compose again used its documented default-builder
+  fallback because Buildx/Bake was unavailable.
+- With `/dev/null` as the Compose env file and Ollama fixed to `http://127.0.0.1:9`, both services
+  started on host loopback. Direct and Vite-proxied health passed, and offline Ollama status/models
+  returned their expected safe HTTP 200 states.
+- Compose prompt smoke passed proxied create, direct full-detail retrieval, combined search plus
+  exact-tag filtering, direct update, proxied delete, and final HTTP 404 with canonical tags and raw
+  multiline content preserved.
+- Normal Compose teardown left zero project containers and retained the three named development
+  volumes (`api-venv`, `hub-data`, and `web-node-modules`).
+- Documentation diff, link/path, content, and whitespace checks passed. No real `.env`, secret,
+  Docker socket, or project database was read or added.
+- Official Vite configuration guidance and the installed Vite package metadata confirmed
+  `envDir: false` disables `.env` loading and the supported Node range is `^20.19.0 || >=22.12.0`.
+- The first dependency-volume sync left pnpm waiting for a modules-purge confirmation and Vite reset
+  connections; an offline-only retry lacked a required tarball. Network-enabled frozen installation
+  with `CI=true` resolved both cases, repeated proxied health passed, and the observed failure is
+  recorded in `docs/FAILURES.md`. The next retained-volume start reported dependencies already up to
+  date in 501 ms before Vite became reachable.
+
+### Commit
+
+- `chore: finalize phase 1a integration`

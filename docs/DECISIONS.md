@@ -97,6 +97,8 @@ This file records decisions that materially shape Local AI Workflow Hub. Dates u
 **Why:** Compose should make the repository easy to evaluate without pretending to be a production or public deployment.
 
 **Consequence:** Containers listen on 0.0.0.0 only inside their network; host publishing remains 127.0.0.1. There is no reverse proxy, TLS, auth, privileged mode, or Docker socket mount.
+API and web startup synchronize their locked dependency environments into named development volumes;
+the first web sync after a lock change may require package-registry access.
 
 ## 2026-07-10 — No Docker or n8n administration in Phase 0
 
@@ -121,3 +123,46 @@ This file records decisions that materially shape Local AI Workflow Hub. Dates u
 **Why:** Authentication, operational recovery, release engineering, and security review cannot be inferred from a development dashboard that happens to run in containers.
 
 **Consequence:** Phase 1–2 may be useful for private daily use. Network deployment guidance is deferred until the Phase 4–5 security and operations work exists.
+
+## 2026-07-11 — Canonical prompt tags without a schema change
+
+**Decision:** Expose tags as string arrays while continuing to store them in the existing comma-delimited Prompt text column. Normalize whitespace, apply deterministic Unicode case folding, reject commas and control characters, preserve first-occurrence order, and deduplicate before persistence.
+
+**Why:** Phase 1A needs predictable tags without changing the approved Phase 0 schema. The canonical codec keeps the existing column usable while making API and browser behavior consistent.
+
+**Consequence:** A prompt has at most 10 tags of at most 30 Unicode characters each. API responses use canonical tags; legacy null and empty values remain readable as an empty array. Tags containing commas cannot be represented until a future approved schema design replaces the text codec.
+
+## 2026-07-11 — Server-filtered prompt registry
+
+**Decision:** Perform prompt search, exact canonical-tag filtering, counting, deterministic ordering, and offset pagination in the backend. List responses contain summaries with bounded content previews; full content is returned only by single-prompt routes.
+
+**Why:** Loading every full prompt into the browser would expose more content than the registry view needs and would not scale with a growing local collection.
+
+**Consequence:** The list contract accepts `q`, `tag`, `limit`, and `offset`; search and tag filters combine with AND. The browser cancels superseded requests and validates every list and detail response at runtime.
+
+## 2026-07-11 — Explicit prompt persistence and permanent deletion
+
+**Decision:** Keep edits in a local draft until Save or Ctrl/Cmd+S. Guard exits from dirty drafts, copy raw content only after an explicit click, and permanently delete one prompt only after a title-bearing confirmation dialog.
+
+**Why:** Autosave and implicit clipboard access would make sensitive local prompt handling harder to reason about. A destructive action should be deliberate and clearly irreversible.
+
+**Consequence:** There is no autosave, archive, soft delete, undo, or application-level recovery in Phase 1A. Prompt content is never rendered as Markdown or HTML. Operators must treat deletion as final and manage their own database-volume backups until Phase 1C designs portable import/export.
+
+## 2026-07-11 — Development-only frontend behavior test tooling
+
+**Decision:** Use Vitest, jsdom, and Testing Library as frontend development dependencies for Prompt Registry behavior tests.
+
+**Why:** Dirty-draft guards, request cancellation, keyboard save, clipboard feedback, mobile navigation, and deletion confirmation are stateful behaviors that type checking and a production build cannot verify.
+
+**Consequence:** The browser production dependency set remains React and React DOM. Prompt UI commits must run `make test-web` in addition to frontend lint, typecheck, and build checks appropriate to the change.
+
+## 2026-07-11 — Explicit frontend process configuration
+
+**Decision:** Set `envDir: false` in both Vite and Vitest configuration. Development proxy and bind
+overrides come only from explicit process environment variables.
+
+**Why:** Automatic frontend `.env` loading is unnecessary for the two safe development overrides and
+would weaken the project's rule that application tooling must not open local secret files.
+
+**Consequence:** Vite and Vitest do not load `.env*` files. Docker Compose retains its separately
+documented standard environment-file behavior, and acceptance commands select `/dev/null` explicitly.
