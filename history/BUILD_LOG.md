@@ -392,3 +392,34 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 1a prompt registry design`
+
+## 2026-07-10 — Phase 1A implementation plan
+
+**Status:** Complete
+
+### Added
+
+- Converted the approved Prompt Registry specification into seven test-first implementation
+  milestones covering domain/repository, HTTP API, frontend test/client boundaries, browsing,
+  editing/deletion, documentation, and final acceptance.
+- Defined exact file responsibilities, public signatures, status contracts, behavior tests,
+  commands, and conventional commit boundaries.
+
+### Decisions
+
+- Retained the previously selected subagent-driven implementation workflow with review before
+  each commit.
+- Kept Phase 1A schema-neutral and preserved separate future design cycles for Phase 1B and 1C.
+- Added dev-only frontend behavior testing as a dedicated milestone before UI implementation.
+
+### Verification
+
+- Checked every Phase 1A design section against at least one implementation task.
+- Scanned the plan for placeholders, inconsistent names, missing types, schema drift, untested
+  error states, unsafe prompt rendering, and incomplete acceptance evidence.
+- Cross-checked commands and paths with the committed uv, pnpm, Make, FastAPI, React, Alembic, and
+  Docker structure.
+
+### Commit
+
+- `docs: add phase 1a implementation plan`
