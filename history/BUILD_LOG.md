@@ -222,4 +222,50 @@ This journal records what is built, why it changes, and how each milestone is ve
 
 ### Commit
 
-- Pending: `feat: add dashboard shell and ollama model ui`
+- `feat: add dashboard shell and ollama model ui`
+
+## 2026-07-10 — Docker Compose development environment
+
+**Status:** Complete
+
+### Added
+
+- Added Python 3.12/uv and Node 22/pnpm development images with focused build contexts that
+  exclude local environments, dependency directories, databases, and real environment files.
+- Added Compose services for the FastAPI API and Vite dashboard, published only on
+  `127.0.0.1:8000` and `127.0.0.1:5173`.
+- Added source bind mounts plus named dependency volumes for the backend virtual environment and
+  frontend `node_modules`.
+- Added a named SQLite data volume mounted at `/data`; API startup runs Alembic before starting
+  the FastAPI development server.
+- Routed the web development proxy to the private `api` service and routed the API's default
+  Ollama connection through `host.docker.internal`, including Linux `host-gateway` support.
+
+### Decisions
+
+- Kept the containers development-only: no production proxy, public host binding, privileged
+  mode, Docker socket, Docker SDK, n8n integration, or secret values were added.
+- Kept the named data and dependency volumes after `docker compose down` so local database state
+  and installed development dependencies survive routine container recreation.
+
+### Verification
+
+- `OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose config --quiet` passed without
+  rendering environment values.
+- `docker compose build` built both images successfully. Compose reported that Buildx was not
+  installed for its configured Bake path, then used the default Docker builder successfully; this
+  was the only infrastructure warning and caused no build failure.
+- `docker compose up -d` started both services. Alembic upgraded the named-volume database to the
+  initial prompt revision before FastAPI development mode became ready.
+- Smoke checks passed for direct API health, dashboard HTML, the Vite-to-API health proxy, and the
+  expected HTTP 200 Ollama-offline response without a running Ollama instance.
+- Confirmed the SQLite file was non-empty in `/data`, stopped and removed both containers and the
+  Compose network, retained all three named volumes, and confirmed no Compose containers remained
+  running.
+- The full 21-test backend suite, Ruff lint and format checks, strict mypy, frontend ESLint, and
+  frontend TypeScript typecheck passed. Pytest retained the already documented dependency-level
+  Starlette deprecation warning.
+
+### Commit
+
+- `chore: add docker compose development environment`

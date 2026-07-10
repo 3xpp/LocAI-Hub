@@ -1,0 +1,43 @@
+name: local-ai-workflow-hub
+
+services:
+  api:
+    build:
+      context: ./backend
+    command:
+      - sh
+      - -c
+      - >-
+        uv run alembic upgrade head &&
+        exec uv run fastapi dev src/local_ai_hub/api/main.py --host 0.0.0.0
+    environment:
+      DATABASE_URL: sqlite:////data/local-ai-hub.db
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      PYTHONPATH: /app/src
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - 127.0.0.1:8000:8000
+    volumes:
+      - ./backend:/app
+      - api-venv:/app/.venv
+      - hub-data:/data
+
+  web:
+    build:
+      context: ./web
+    environment:
+      VITE_API_PROXY_TARGET: http://api:8000
+      VITE_DEV_HOST: 0.0.0.0
+    depends_on:
+      - api
+    ports:
+      - 127.0.0.1:5173:5173
+    volumes:
+      - ./web:/app
+      - web-node-modules:/app/node_modules
+
+volumes:
+  api-venv:
+  hub-data:
+  web-node-modules:
