@@ -3,3 +3,11 @@ dist
 .env
 .env.*
 .git
+*.pem
+*.key
+*.crt
+*.p12
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3

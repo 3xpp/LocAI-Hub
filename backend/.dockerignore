@@ -8,5 +8,10 @@ data
 .env
 .env.*
 .git
+*.pem
+*.key
+*.crt
+*.p12
 *.db
+*.db-journal
 *.sqlite*

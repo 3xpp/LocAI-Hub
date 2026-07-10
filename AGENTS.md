@@ -16,6 +16,7 @@ Local AI Workflow Hub is a local-first dashboard for observing a developer's loc
 - Run frontend typecheck before committing frontend changes.
 - Run the relevant lint commands for every changed domain.
 - Update history/BUILD_LOG.md in every implementation milestone.
+- Record only failures actually observed in docs/FAILURES.md; never invent incidents.
 
 ## Approval boundaries
 
@@ -33,9 +34,11 @@ Ask before:
 - Never read, print, edit, or commit .env or real secret files.
 - Never commit credentials, tokens, password hashes, local databases, or generated dependency directories.
 - Keep development services bound to localhost by default.
+- When validating Compose interpolation, use explicit safe sample values and never print ambient protected configuration.
 
 ## Documentation and Git
 
 - Keep docs/DECISIONS.md, docs/FAILURES.md, docs/SECURITY_NOTES.md, and history/BUILD_LOG.md current.
+- Keep each build-log entry in the same commit as the milestone it describes.
 - Use conventional commit messages.
 - Do not push unless the user explicitly asks.

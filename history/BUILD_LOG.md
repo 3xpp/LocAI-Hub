@@ -269,3 +269,46 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `chore: add docker compose development environment`
+
+## 2026-07-10 — Setup, security, decision, and failure documentation
+
+**Status:** Complete
+
+### Added
+
+- Added the root setup guide with Docker and non-Docker quickstarts, verified environment
+  behavior, API contracts, Make targets, limitations, security warning, and six-stage roadmap.
+- Added dated architecture decisions for API semantics, persistence, frontend boundaries, Docker,
+  integrations, security, and the human-readable build journal.
+- Added a factual failure log covering only issues observed during Phase 0 implementation and
+  validation, including their resolution or current non-blocking status.
+- Added comprehensive security notes for local data, environment files, network exposure, Ollama,
+  Compose volumes, dependencies, and future deployment gates.
+- Strengthened future-agent rules for failure reporting, build-journal commits, and safe Compose
+  validation.
+- Hardened both Docker build contexts against common private-key, certificate, and local database
+  file formats so the documented secret boundary is enforced by the build inputs.
+
+### Decisions
+
+- Documented private localhost usefulness and network-exposed production readiness as separate
+  maturity targets.
+- Kept setup instructions aligned with process-environment-only Python configuration and standard
+  Docker Compose .env behavior.
+- Clarified that .env.example targets native localhost development and must not override Compose's
+  host.docker.internal Ollama origin unchanged.
+- Documented the optional headless screenshot failure as an environment limitation rather than an
+  application or build failure.
+
+### Verification
+
+- Cross-checked documented commands, defaults, ports, routes, response semantics, volumes, and
+  limitations against the committed Make, config, API, frontend, and Compose files.
+- Checked all repository-relative Markdown links and confirmed their targets exist.
+- Scanned documentation for incomplete markers, unsafe deployment claims, real-secret patterns,
+  whitespace errors, and contradictory Phase 0 scope.
+- Rebuilt both Docker images after the build-context exclusions changed.
+
+### Commit
+
+- `docs: add setup guide security notes and roadmap`
