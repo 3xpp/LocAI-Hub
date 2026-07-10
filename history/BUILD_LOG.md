@@ -186,3 +186,40 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add fastapi health and ollama endpoints`
+
+## 2026-07-10 — Local control-room dashboard
+
+**Status:** Complete
+
+### Added
+
+- Added the React application entry point and an industrial, responsive control-room interface
+  for backend health, Ollama runtime status, and the installed model inventory.
+- Added a typed, runtime-validated same-origin API client with explicit HTTP, network, invalid
+  response, and request cancellation behavior.
+- Added independent loading, success, offline, empty, and error states for all three dashboard
+  resources, plus a manual refresh control and last-checked timestamp.
+- Added accessible live status messaging, keyboard focus treatment, reduced-motion behavior,
+  WCAG AA contrast for compact telemetry labels, and mobile layouts without adding frontend
+  dependencies or remote assets.
+
+### Decisions
+
+- Interpreted Ollama's HTTP 200 responses through their `online` and `error` payload fields so an
+  offline runtime is not presented as healthy and an empty model list with `error: null` remains a
+  valid zero-model state.
+- Started all resource requests concurrently while allowing each card to settle independently;
+  refreshes abort any superseded request group to prevent stale UI updates.
+- Rejected malformed JSON response shapes at the client boundary, including invalid nested model
+  fields, so unvalidated backend data never reaches the dashboard components.
+- Kept the approved local-control-room visual language in plain CSS using system-resident type,
+  restrained signal colors, dense telemetry details, and no external font or component service.
+
+### Verification
+
+- `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed from `web/`.
+- Root `make lint` and `make typecheck` passed across the backend and frontend domains.
+
+### Commit
+
+- Pending: `feat: add dashboard shell and ollama model ui`
