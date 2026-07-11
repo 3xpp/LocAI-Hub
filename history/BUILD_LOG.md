@@ -819,3 +819,51 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: record phase 1a acceptance validation`
+
+## 2026-07-12 — Phase 1B Workflow Links design
+
+**Status:** Written specification awaiting review
+
+### Added
+
+- Specified a dedicated WorkflowLink persistence domain, additive 0002 migration, five-route CRUD
+  API, server search, exact tags, deterministic pagination, and fixed safe-error behavior.
+- Defined a third top-level Workflow Links view with a split local-route directory, explicit save,
+  cross-view dirty-draft protection, safe persisted-link opening/copying, responsive panes, and
+  confirmed permanent deletion.
+- Defined an exact HTTP(S) parsing profile without URL userinfo for Python and TypeScript, including
+  ASCII host rules, canonical IP forms, port boundaries, raw-authority rejection cases, and a shared
+  parity fixture corpus.
+- Added migration-preservation, backend, frontend, accessibility, browser, Compose, artifact, and
+  security acceptance requirements plus an API-level handoff boundary for Phase 1C.
+
+### Decisions
+
+- The user explicitly approved additive migration 0002_create_workflow_links; the existing prompts
+  table remains unchanged.
+- Keep workflow links as generic references with flexible canonical tags, not provider-aware remote
+  workflow records. The Hub will never fetch, preview, authenticate to, execute, or mutate a stored
+  destination in Phase 1B.
+- Permit localhost/private-network deep links, paths, query strings, and fragments, while rejecting
+  URL userinfo, unsafe schemes, malformed authorities, Unicode host spelling, noncanonical numeric
+  hosts, invalid ports, control characters, whitespace, and backslashes.
+- Keep prompt and workflow controllers domain-focused. Share only the tag codec and small registry
+  primitives after their interfaces become neutral and prompt regressions remain green.
+
+### Verification
+
+- Reviewed the specification for placeholders, contradictions, ambiguous omission/default
+  semantics, unapproved dependencies, schema scope, unsafe navigation, secret handling, and Phase 1C
+  coupling.
+- Cross-checked the design against the current Prompt model, migration round trip, FastAPI error
+  handler, repository/search patterns, React navigation, registry controller, native deletion
+  dialog, AGENTS approval boundaries, and localhost security posture.
+- An adversarial written-spec review found seven ambiguities around URL parser parity, credential
+  wording, empty previews, PUT defaults, SQL defaults, auto-selection, and persistence-error
+  leakage. Each contract was made explicit, and the follow-up review reported no remaining blocker.
+- No implementation code, runtime dependency, environment file, secret, or production configuration
+  changed during this design milestone.
+
+### Commit
+
+- `docs: add phase 1b workflow links design`
