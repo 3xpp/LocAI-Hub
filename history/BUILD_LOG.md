@@ -987,3 +987,54 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add workflow link domain contracts`
+
+## 2026-07-12 — Phase 1B workflow-link persistence
+
+**Status:** Complete
+
+### Added
+
+- Added the additive `WorkflowLink` SQLAlchemy mapping and
+  `0002_create_workflow_links` migration with only the approved seven columns and primary key.
+- Added a focused workflow-link repository for deterministic list/count pagination, get, create,
+  update, and delete operations.
+- Added isolated SQLite repository coverage for duplicate preservation, all-field search, Unicode
+  case folding, literal LIKE characters, exact tags, malformed stored fragments, combined filters,
+  stable ordering, transaction counts, refresh counts, and empty or out-of-range pages.
+
+### Migration safety
+
+- Preserved the existing Prompt mapping and kept `0001_create_prompts.py` byte-for-byte unchanged
+  at SHA-256 `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5`.
+- Proved an existing Prompt payload survives `0001` to `0002` and back to `0001`, while the
+  workflow-links table appears only at `0002` and base still removes the Prompt table.
+- Asserted exact workflow-link types, string lengths, nullability, empty-string SQL defaults,
+  timestamp defaults, primary key, and the absence of indexes, foreign keys, and unique constraints.
+- Proved raw SQL inserts receive empty description and tag values plus current timestamps, and
+  Alembic reports no model-to-migration drift at head.
+
+### Repository decisions
+
+- Keep URL parsing, HTTP behavior, and rollback policy outside the persistence layer; the repository
+  stores normalized service inputs and never contacts a destination.
+- Encode tags through the shared domain-neutral codec and use the registered canonical-tag and
+  Unicode-casefold SQLite functions for safe, exact filtering.
+- Commit each mutation exactly once, refresh create and update exactly once, never refresh delete,
+  and keep list/get operations free of commits.
+
+### Verification
+
+- Confirmed the migration test's red state against revision `0001`: `workflow_links` was absent.
+- Confirmed the repository test's red state before implementation: its module did not exist.
+- Focused migration and repository gates passed all 18 tests after implementation.
+- The full backend regression passed all 236 tests with only the already documented Starlette
+  `TestClient` deprecation warning.
+- Ruff lint passed; Ruff formatting verified all 39 backend Python files; strict mypy passed across
+  25 backend source files.
+- `git diff --check` and the original migration checksum gate passed before handoff.
+- No dependency, Prompt schema, index, foreign key, secret, environment file, network behavior, or
+  deployment configuration changed in this milestone.
+
+### Commit
+
+- `feat: add workflow link persistence`

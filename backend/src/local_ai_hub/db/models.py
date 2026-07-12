@@ -74,3 +74,34 @@ class Prompt(Base):
         onupdate=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
     )
+
+
+class WorkflowLink(Base):
+    """A saved local workflow destination and its operator context."""
+
+    __tablename__ = "workflow_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str] = mapped_column(String(2048))
+    description: Mapped[str] = mapped_column(
+        Text,
+        default="",
+        server_default=text("''"),
+    )
+    tags: Mapped[str] = mapped_column(
+        Text,
+        default="",
+        server_default=text("''"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(),
+        default=utc_now,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(),
+        default=utc_now,
+        onupdate=utc_now,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
