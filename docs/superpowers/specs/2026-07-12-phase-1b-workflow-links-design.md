@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-12
 
-**Status:** Design approved; awaiting written-spec review
+**Status:** Approved for implementation
 
 **Sequence:** Phase 1B of 1A Prompt Registry → 1B Workflow Links → 1C Import/Export
 
@@ -206,8 +206,9 @@ search behavior and stored values must remain unchanged through the refactor.
 - Require a nonempty ASCII hostname. Allow localhost, valid single-label or dotted DNS names,
   ASCII punycode names, canonical dotted-decimal IPv4, and bracketed IPv6.
 - DNS labels must be 1–63 ASCII letters, digits, or internal hyphens, must not begin or end with a
-  hyphen, and must not end in a trailing dot. A host made only of digits and dots must pass Python's
-  ipaddress.IPv4Address parser and use its canonical dotted-decimal spelling.
+  hyphen, the full DNS hostname must be at most 253 characters, and it must not end in a trailing
+  dot. A host made only of digits and dots must pass Python's ipaddress.IPv4Address parser and use
+  its canonical dotted-decimal spelling.
 - IPv6 must use brackets in the raw authority and pass Python's ipaddress.IPv6Address parser without
   a zone identifier. Unicode hostnames must be entered in ASCII punycode form.
 - Allow omitted ports or decimal ports from 1 through 65535. Accessing the parsed port must not
@@ -225,6 +226,11 @@ validating a server response, because only a runtime-safe persisted URL may beco
 committed JSON fixture corpus defines accepted and rejected edge cases for both Python and
 TypeScript. Every fixture must produce the same decision in both implementations; the frontend
 fails closed when its URL parser cannot represent a backend-accepted value safely.
+
+Before emitting a database record, the backend also validates that its ID is positive, title/URL/
+description equal their canonical normalized forms, tags equal the canonical codec output, and both
+timestamps are timezone-aware datetimes. Corrupt stored data returns the fixed operation-failed
+response rather than being repaired or partially exposed.
 
 The project does not heuristically search query parameter names for secrets. That would produce
 false confidence. Documentation and field help instead warn that the complete URL is stored,
@@ -330,10 +336,17 @@ that a human confirmed deletion; the browser owns the confirmation interaction.
   fixed validation messages but not submitted titles, URLs, descriptions, or search text.
 - Missing items return only the fixed 404 message.
 - Expected validation does not become HTTP 500.
-- Every route catches SQLAlchemy persistence failures, rolls back its session, and returns the fixed
-  HTTP 500 response {"detail": "Workflow link operation failed"} without logging or chaining the
-  caught exception. Responses and application logs must not contain raw exceptions, SQL, bound
-  parameters, database locations, request bodies, or link contents.
+- Every route catches SQLAlchemy persistence failures and invalid stored workflow-link data, attempts
+  to roll back its session, and returns the fixed HTTP 500 response
+  {"detail": "Workflow link operation failed"} without logging or chaining the caught exception.
+  A rollback failure is also suppressed so it cannot replace the fixed response. Responses and
+  application logs must not contain raw exceptions, SQL, bound parameters, database locations,
+  request bodies, or link contents.
+- The application installs an idempotent filter on the Uvicorn access logger that replaces the
+  complete query string with ?<redacted> before formatting. Method, path, HTTP version, and status
+  remain observable, but q, tag, and future query values do not enter development logs. External
+  proxies or process supervisors remain outside this development profile and require their own
+  redaction policy.
 
 ## Repository Behavior
 
@@ -530,6 +543,12 @@ Prompt Registry controller or repositories into universal CRUD abstractions.
 - Submitted URLs, descriptions, and query markers never appear in validation or server errors.
 - Persistence failures roll back and produce only the fixed HTTP 500 body; response and caplog
   assertions prove that SQL, parameters, raw exceptions, and record content do not leak.
+- A directly corrupted stored URL fails closed with the same fixed HTTP 500 instead of becoming a
+  list or detail response.
+- Corrupt persisted ID, title, description, tags, or timestamps fail through the same fixed boundary,
+  and a rollback failure cannot replace or leak through that response.
+- A real Uvicorn loopback request proves workflow search and tag values are absent from formatted
+  access logs.
 - No test needs a live destination, Ollama, or n8n.
 
 ### Migration tests

@@ -822,7 +822,7 @@ This journal records what is built, why it changes, and how each milestone is ve
 
 ## 2026-07-12 — Phase 1B Workflow Links design
 
-**Status:** Written specification awaiting review
+**Status:** Complete
 
 ### Added
 
@@ -861,9 +861,50 @@ This journal records what is built, why it changes, and how each milestone is ve
 - An adversarial written-spec review found seven ambiguities around URL parser parity, credential
   wording, empty previews, PUT defaults, SQL defaults, auto-selection, and persistence-error
   leakage. Each contract was made explicit, and the follow-up review reported no remaining blocker.
+- The user reviewed and approved the committed written specification, including migration 0002, and
+  authorized implementation planning and the subsequent build.
 - No implementation code, runtime dependency, environment file, secret, or production configuration
   changed during this design milestone.
 
 ### Commit
 
 - `docs: add phase 1b workflow links design`
+
+## 2026-07-12 — Phase 1B implementation plan
+
+**Status:** Complete
+
+### Added
+
+- Converted the approved Workflow Links specification into eight test-first milestones covering
+  shared domain contracts, additive persistence, safe HTTP APIs, frontend runtime boundaries,
+  searchable browsing, guarded editing/navigation, integration documentation, and final acceptance.
+- Mapped every created and modified file to one responsibility and defined exact commands, expected
+  red/green outcomes, conventional commits, and chronological history updates.
+- Added one cross-runtime URL decision corpus, prompt-preserving migration checks, stored-data
+  fail-closed behavior, isolated Compose validation, and an explicit Firefox Open test against a
+  task-owned loopback sentinel.
+
+### Decisions
+
+- Use fresh implementation and review agents between milestones, matching the Phase 1A workflow,
+  while keeping commits on the current clean main branch and never pushing.
+- Keep the workflow controller separate from the Prompt controller. Share only canonical tag logic,
+  the tag input, deletion dialog, and small text helpers after Prompt regressions pass.
+- Validate the full backend/frontend/Docker/browser stack before documentation finalization and
+  repeat it from the exact committed candidate during final acceptance.
+
+### Verification
+
+- Checked the plan against every design section, including schema preservation, URL parity,
+  redaction, async ownership, dirty navigation, safe Open/Copy, deletion, responsive focus,
+  no-dereference security, documentation, and Phase 1C boundaries.
+- Scanned for placeholders, undefined public types, inconsistent names, ambiguous defaults,
+  incomplete failure handling, unsafe Compose data reuse, missing test commands, and commit gaps.
+- Incorporated independent backend, frontend, and acceptance planning reviews before commit.
+- No application code, dependency, secret, real environment file, or deployment configuration
+  changed during this planning milestone.
+
+### Commit
+
+- `docs: add phase 1b implementation plan`
