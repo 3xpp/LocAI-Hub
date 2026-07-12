@@ -1038,3 +1038,66 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add workflow link persistence`
+
+## 2026-07-12 — Phase 1B workflow-link API safety boundary
+
+**Status:** Complete
+
+### Added
+
+- Added strict create and complete-replacement request contracts plus list-summary and full-record
+  response contracts for workflow links.
+- Added list, create, retrieve, replace, and permanent-delete routes under `/api/workflow-links`
+  with search, exact tags, deterministic pagination, fixed 404 responses, and explicit empty 204
+  deletion responses.
+- Added canonical response conversion that rejects invalid IDs, noncanonical title, URL,
+  description, or tag storage, and naive or malformed timestamps before any record reaches a
+  browser response.
+- Added an idempotent `uvicorn.access` logger filter during application lifespan startup. It copies
+  request arguments and replaces every complete query string with `?<redacted>` before formatting.
+
+### Safety decisions
+
+- Keep submitted URL, description, and query values out of validation bodies by preserving the
+  global sanitized 422 handler and using only fixed field messages.
+- Treat SQLAlchemy errors, scalar-hydration failures, and invalid stored records as one fixed
+  `Workflow link operation failed` boundary. Each failure attempts one rollback, suppresses an
+  ordinary rollback failure, logs nothing, and does not chain the caught persistence exception.
+- Validate stored records explicitly before Pydantic construction so coercion cannot repair or
+  expose corrupt values. Tags must round-trip through the shared codec without change and both
+  timestamps must be timezone-aware.
+- Run the same canonical gate during item lookup so PUT cannot repair and DELETE cannot remove a
+  corrupt record; both mutations return the fixed failure and leave the stored row unchanged.
+- Bound item IDs and offsets to SQLite's signed 64-bit integer range and catch defensive
+  `OverflowError` cases at every operation boundary so oversized user integers remain sanitized
+  422 responses instead of escaping as generic text errors or server tracebacks.
+- Never resolve, fetch, preview, or otherwise contact a saved workflow destination. The only
+  network exercised by this milestone is a test-owned `127.0.0.1` Uvicorn socket used to verify
+  formatted access logs.
+
+### Verification
+
+- The first focused test run exposed two test-harness mistakes: the shared URL corpus contains
+  named case objects rather than bare strings, and the list repository patch target is plural.
+  Correcting those test adapters produced a fully green focused run without changing product
+  behavior.
+- Workflow-link API coverage passed all 92 cases, including the complete 15-accepted/32-rejected
+  shared URL corpus, lifecycle statuses and content types, summary omission, defaults, duplicates,
+  filters, pagination, invalid IDs and fields, non-reflection, repository failures, rollback
+  failure, suppressed persistence-exception chaining, every stored scalar corruption category,
+  mutation fail-closed behavior, exact positive-ID validation, and oversized ID/offset rejection
+  across list, GET, PUT, and DELETE requests.
+- Access-log coverage passed all 10 cases, including queryless and encoded targets, repeated
+  filtering and installation, unexpected argument shapes, and a real Uvicorn request. The
+  formatted record retained `/api/workflow-links?<redacted>` while both unique query markers were
+  absent.
+- The combined focused gate passed all 102 tests. The full backend regression passed all 338 tests
+  with only the already documented Starlette `TestClient` deprecation warning.
+- Ruff lint passed; Ruff formatting verified all 44 backend Python files; strict mypy passed across
+  28 backend source files. `git diff --check` and the original migration checksum gate passed.
+- No dependency, migration, Prompt behavior, secret, environment file, destination request, or
+  deployment configuration changed in this milestone.
+
+### Commit
+
+- `feat: add workflow link api`
