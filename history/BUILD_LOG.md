@@ -1350,3 +1350,84 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `chore: finalize phase 1b integration`
+
+## 2026-07-12 — Phase 1B final acceptance validation
+
+**Status:** Complete
+
+### Exact candidate
+
+- Repeated the complete acceptance matrix against committed candidate
+  `1a152f992b8458f0a464d90cc68e495874b0fdba` without changing runtime behavior.
+- Independent requirement-matrix, backend subaudit, and artifact/security reviewers approved the
+  candidate with no remaining blocker. A focused backend audit passed 260 tests; the artifact audit
+  additionally passed 58 Prompt tests and all 213 frontend tests.
+
+### Dependency, test, and build gates
+
+- Literal `make install` passed with both locks unchanged. uv resolved 58 packages and audited 56;
+  pnpm reported its lock up to date. The known ignored esbuild build-script notice was the only
+  package-install warning relevant to the repository.
+- `make test` passed all 338 backend tests and `make test-e2e` passed all 136 end-to-end tests. Each
+  emitted only the already documented single Starlette TestClient deprecation warning.
+- `make test-web` passed all 213 frontend tests across 13 files. Ruff and ESLint lint passed; strict
+  mypy passed across 28 backend source files and TypeScript project-reference typechecking passed.
+- Ruff format verification passed all 44 Python files. The Vite production build transformed 49
+  modules and produced a 261.53 kB JavaScript bundle (77.37 kB gzip) and 38.93 kB CSS bundle
+  (7.77 kB gzip).
+- The default Docker image build passed. Compose emitted only the already documented Bake/buildx
+  fallback warning and used its successful default-builder path.
+
+### Migration preservation
+
+- A manually seeded Prompt survived the full disposable migration sequence
+  `0001_create_prompts` → `0002_create_workflow_links` → `0001_create_prompts` →
+  `0002_create_workflow_links`; Alembic reported no model-to-migration drift at head.
+- Downgrade to base removed both Prompt and WorkflowLink tables. The temporary database and sidecar
+  files were removed afterward.
+- Revision `0001_create_prompts.py` remained byte-for-byte unchanged at SHA-256
+  `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5`.
+
+### Final isolated Compose acceptance
+
+- Direct and proxied health returned HTTP 200. Direct and proxied Ollama status returned the
+  expected graceful offline HTTP 200 state for the explicit safe `127.0.0.1:9` origin.
+- The final workflow-link lifecycle passed direct create 201, proxied detail 200, direct and proxied
+  combined query-plus-exact-tag search with total 1, proxied complete PUT 200, direct DELETE 204,
+  proxied repeated DELETE 404, and direct missing-detail 404. The bridge-owned destination sentinel
+  recorded zero requests.
+- The container pnpm store resolved at `/pnpm/store/v10`; neither the container source tree nor the
+  host source tree contained a `.pnpm-store` directory.
+- Final teardown removed every acceptance-project container, network, and all four acceptance
+  volumes. Acceptance container/volume listings were empty afterward, and the four preexisting
+  main-project volumes remained unchanged.
+
+### Exact-candidate browser acceptance
+
+- Firefox 152.0.5 with geckodriver 0.36.0 and WebDriver BiDi repeated create, detail, search, exact
+  tag, filter clearing, update, exact persisted-URL copy, dirty-navigation Cancel, delete Cancel,
+  native Escape, confirmed delete, repeated-delete 404, and settled mobile editor focus against a
+  disposable Alembic database and Vite proxy.
+- Exact CSS viewports 320, 600, 601, and 1280 px had document/body scroll widths 320/320, 588/588,
+  589/589, and 1268/1268 respectively, with no horizontal overflow.
+- The loopback sentinel recorded zero requests before explicit Open. One Open click created exactly
+  one new tab and one `/explicit-open?opaque=task8` request with no `Referer` header.
+- Browser teardown left zero task-owned API, Vite, geckodriver, Firefox, or sentinel processes and
+  removed its database, logs, temporary directory, and external harness script.
+
+### Final scope and artifact audit
+
+- Final generated cache/build/temporary cleanup and prohibited-capability, secret, artifact,
+  container, volume, migration, documentation, and Git audits passed.
+- No tracked or Git-visible untracked secret, environment file, project database, dependency,
+  build, cache, bytecode, or TypeScript artifact remained. Task-generated output outside the ignored
+  installed dependency environments was removed; no ignored secret file was inspected.
+- Host publishing remains loopback-only. No destination auto-request, n8n integration/key, Docker
+  socket/SDK, privileged mode, cloud AI, auth, deployment, production configuration, remote,
+  upstream, or push was added or used.
+- `docs/FAILURES.md` required no new final-acceptance entry; only the known Starlette and
+  Bake/buildx warnings remained. Phase 1B is complete and Phase 1C Import/Export is next.
+
+### Commit
+
+- `test: record phase 1b acceptance validation`

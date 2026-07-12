@@ -12,7 +12,7 @@ A local-first control room for Ollama, reusable prompts, workflow references, an
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-The Phase 1B implementation currently provides:
+Phase 1B provides:
 
 - backend service health;
 - safe Ollama online/offline status;
@@ -33,8 +33,8 @@ The Phase 1B implementation currently provides:
 
 It remains intentionally read-only around Ollama and does not expose Docker, n8n, shell,
 model-management, prompt-execution, provider synchronization, or cloud-AI controls. Workflow links
-are stored references, not live service integrations. Implementation is complete; final
-repository-wide Phase 1B acceptance is still in progress.
+are stored references, not live service integrations. Phase 1B implementation and final acceptance
+are complete; Phase 1C Import/Export is the next separately designed milestone.
 
 ## Architecture
 
@@ -228,7 +228,7 @@ search. Duplicate titles and destinations are valid.
 
 ## Validation
 
-The Phase 1B implementation currently verifies:
+Phase 1B final acceptance verifies:
 
 - exact health and Ollama HTTP contracts;
 - connection, HTTP, invalid JSON, invalid URL, and credential-reflection failures;
@@ -254,8 +254,8 @@ The Phase 1B implementation currently verifies:
   offline Ollama state, workflow-link CRUD/search/delete, zero destination dereferences, dependency
   store isolation, and complete acceptance-project teardown.
 
-The final repeat Phase 1B acceptance from the exact committed candidate—including artifact and
-clean-Git audits—is still pending.
+These gates were repeated from the exact committed Phase 1B candidate, including migration
+preservation, isolated Compose teardown, artifact/security review, and clean-Git audits.
 
 ## Security posture
 
@@ -293,8 +293,8 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 
 1. **Phase 0 — Observable MVP (complete):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
 2. **Phase 1A — Prompt Registry (complete):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
-3. **Phase 1B — Workflow Links (implementation complete; final acceptance in progress):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
-4. **Phase 1C — Import/Export:** separately designed portable local prompt and workflow data.
+3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
+4. **Phase 1C — Import/Export (next):** separately designed portable local prompt and workflow data.
 5. **Phase 2 — Read-only integrations:** explicitly approved n8n and service/container visibility through constrained interfaces.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.

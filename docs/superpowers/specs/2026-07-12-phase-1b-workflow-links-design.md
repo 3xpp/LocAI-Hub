@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-12
 
-**Status:** Approved; implementation complete; final acceptance pending
+**Status:** Approved; implementation and final acceptance complete
 
 **Sequence:** Phase 1B of 1A Prompt Registry → 1B Workflow Links → 1C Import/Export
 
@@ -10,9 +10,9 @@
 0002_create_workflow_links on 2026-07-12. The existing prompts table remains unchanged.
 
 **Implementation:** The dedicated model/migration, five-route API, searchable registry, guarded
-editor, persisted-only Open/Copy actions, and automated/real-browser behavior checks are complete.
-The final repository-wide dependency, migration, Docker Compose, artifact, and clean-Git acceptance
-pass remains pending.
+editor, persisted-only Open/Copy actions, and final backend/frontend/migration/Docker/Compose/browser/
+artifact/security acceptance are complete. Phase 1C Import/Export is the next separately designed
+milestone.
 
 ## Summary
 
