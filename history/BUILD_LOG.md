@@ -1212,3 +1212,83 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add searchable workflow link registry`
+
+## 2026-07-12 — Phase 1B workflow-link editor and safe navigation
+
+**Status:** Complete
+
+### Added
+
+- Added the complete Workflow Links editor for title, absolute HTTP(S) URL, raw-text description,
+  canonical tags, timestamps, explicit save, Ctrl/Cmd+S, permanent deletion, and mobile Back.
+- Added strict client save readiness across required fields, Unicode code-point limits, browser-safe
+  URL parsing, canonical tag count/length/deduplication, valid pending-tag inclusion, detail state,
+  mutation state, and dirty state.
+- Added independent generation ownership for create, update, delete, and clipboard operations.
+  Successful writes adopt the complete canonical response into the selected record, baseline,
+  draft, and list summary; failed writes retain every draft field and the pending tag buffer without
+  automatic retry.
+- Added persisted-only destination actions. Open is a literal anchor with the exact saved `href`,
+  `_blank`, `noopener noreferrer`, and `no-referrer`; Copy writes the exact last-saved URL and
+  reports success or failure through a polite live region. New, unsafe, and unsaved draft URLs
+  never become destination actions.
+- Added guarded workflow selection, New, mobile Back, missing-record recovery, browser unload, and
+  Workflow-to-Overview/Prompts navigation while preserving the existing Prompt-to-Workflow guard.
+- Added title-bearing native deletion confirmation with Cancel-first focus, Escape handling,
+  pending locks, duplicate-submit prevention, fixed delete-404 recovery, adjacent-row/New focus,
+  and ignored late completions.
+
+### Async, navigation, and safety decisions
+
+- A specification review found that an already-running list request could complete after a save or
+  delete, overwrite the adopted canonical summary, or reintroduce a removed row. Save adoption and
+  delete/404 directory recovery now abort and invalidate list ownership before changing visible
+  state; deterministic deferred-request tests prove stale completions are ignored.
+- Keep Open and Copy bound to the runtime-validated persisted record even while a different URL is
+  dirty. The editor labels the saved origin and full destination and explains that an edited URL
+  must be saved before either action uses it.
+- Invalidate clipboard ownership on draft, pending-tag, selection, save, delete, and unmount
+  transitions. A late clipboard resolution cannot publish status into another record or newer
+  state.
+- Block every abandonment path without opening a discard prompt while a save or delete is pending.
+  Dirty and pending states both register `beforeunload`; ordinary canceled discard keeps the active
+  pane and every draft value.
+- On deletion, capture the persisted title and list order, remove the ID, clear record state,
+  refresh totals/list ownership, announce success only after a real 204, move mobile to the list,
+  and restore focus in next-row, previous-row, then New-link order after the native dialog closes.
+- Continue to render description, URL, title, and tags only as text or form values. No destination
+  metadata, favicon, redirect, proxy, `window.open`, provider call, or automatic target request was
+  added.
+
+### Verification
+
+- The test-first red gate produced 17 expected Task 6 failures on the absent editor/mutation UI
+  while all 186 pre-existing frontend tests stayed green.
+- Final frontend behavior passed all 213 tests across 13 test files. Coverage includes field and URL
+  attributes, 200/2,048/5,000 code-point boundaries, pending tags, complete POST/PUT adoption,
+  save preservation, exact persisted copy, clipboard failure/staleness, safe-anchor attributes,
+  no-dereference interactions, dirty and pending navigation, beforeunload, list/mutation races,
+  deletion Cancel/Escape/404/failure/focus paths, duplicate submission, unmount races, and mobile
+  settled focus.
+- ESLint and TypeScript project-reference typechecking passed. The Vite production build transformed
+  49 modules and produced a 261.53 kB JavaScript bundle (77.37 kB gzip) and 38.93 kB CSS bundle
+  (7.77 kB gzip).
+- A real Firefox 152.0.5 / geckodriver 0.36.0 run used an Alembic-migrated disposable SQLite
+  database, safe explicit environment values, Vite proxy, and a task-owned loopback 204 sentinel.
+  It passed create, search, exact tag, clear filter, detail, update, exact saved-URL copy, dirty
+  canceled navigation, delete Cancel/Escape/Confirm, repeated API delete 404, and settled mobile
+  focus.
+- WebDriver BiDi exercised exact 320, 600, 601, and 1280 px CSS viewports. Document/body scroll
+  widths were respectively 320/320, 588/588, 589/589, and 1268/1268 against viewport widths 320,
+  600, 601, and 1280, with no horizontal overflow.
+- The sentinel recorded zero requests through render, selection, search, editing, saves, copy, dirty
+  navigation, and deletion. Clicking Open created exactly one new tab and one
+  `/explicit-open?opaque=task6` request with no `Referer` header.
+- Final harness cleanup left zero task-owned API, Vite, geckodriver, Firefox, or sentinel processes
+  and removed its disposable database, sidecars, logs, temporary directory, and external script.
+  `git diff --check` passed; no dependency, lockfile, backend, migration, secret, environment file,
+  Docker, n8n, auth, deployment, or production configuration changed.
+
+### Commit
+
+- `feat: add workflow link editor and safe navigation`

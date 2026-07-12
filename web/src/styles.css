@@ -1880,6 +1880,161 @@ h2 {
   border-color: #354a44;
 }
 
+.workflow-editor {
+  --signal: var(--route-signal);
+  --signal-bright: var(--route-signal-bright);
+
+  width: min(100%, 760px);
+  border-color: #354a44;
+  background:
+    linear-gradient(135deg, rgba(120, 215, 193, 0.055), transparent 29%),
+    rgba(11, 19, 16, 0.97);
+  box-shadow: 12px 12px 0 rgba(120, 215, 193, 0.04), 0 28px 76px rgba(0, 0, 0, 0.34);
+}
+
+.workflow-editor::before {
+  background: var(--route-signal);
+}
+
+.workflow-editor__heading .eyebrow {
+  color: var(--route-signal);
+}
+
+.workflow-editor .editor-field--workflow-description textarea {
+  min-height: 180px;
+}
+
+.saved-destination {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  border: 1px solid #354a44;
+  padding: 17px;
+  background:
+    linear-gradient(90deg, rgba(120, 215, 193, 0.045), transparent 54%),
+    #0a1210;
+}
+
+.saved-destination > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.saved-destination .eyebrow {
+  margin: 0;
+  color: var(--muted);
+}
+
+.saved-destination strong {
+  color: var(--route-signal);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.saved-destination > div:first-child > span {
+  color: var(--muted-high);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.61rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.saved-destination__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.saved-destination__actions a,
+.saved-destination__actions button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #3d5b54;
+  border-radius: 0;
+  padding: 10px 13px;
+  color: var(--route-signal);
+  background: #101917;
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.saved-destination__actions a:hover,
+.saved-destination__actions button:hover:not(:disabled) {
+  border-color: var(--route-signal);
+  color: #08100e;
+  background: var(--route-signal);
+}
+
+.saved-destination__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.saved-destination__notice,
+.saved-destination__warning,
+.saved-destination__empty {
+  margin: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.59rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.saved-destination__notice,
+.saved-destination__empty {
+  color: #77948d;
+}
+
+.saved-destination__warning {
+  color: #ffad9d;
+}
+
+.saved-destination__empty {
+  border-left: 2px solid #3d5b54;
+  padding: 10px 12px;
+  background: rgba(120, 215, 193, 0.025);
+}
+
+.workflow-editor__actions > div {
+  min-width: 0;
+}
+
+.save-hint {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.registry-announcement--error {
+  border-left-color: var(--offline);
+  color: #ffad9d;
+  background: rgba(255, 128, 104, 0.055);
+}
+
+.workflow-editor .editor-actions button,
+.workflow-editor .editor-back {
+  min-height: 44px;
+}
+
+.saved-destination__actions a:focus-visible,
+.saved-destination__actions button:focus-visible {
+  outline: 2px solid var(--route-signal);
+  outline-offset: 3px;
+}
+
 .registry-footer {
   padding-top: 18px;
 }
@@ -2169,6 +2324,12 @@ h2 {
     box-shadow: none;
   }
 
+  .workflow-editor {
+    max-width: 100%;
+    padding: 27px 17px 20px;
+    box-shadow: none;
+  }
+
   .workflow-route-card__telemetry {
     grid-template-columns: 1fr;
   }
@@ -2186,7 +2347,7 @@ h2 {
 
   .editor-back {
     display: inline-flex;
-    min-height: 42px;
+    min-height: 44px;
     align-items: center;
     order: -1;
   }
@@ -2246,6 +2407,23 @@ h2 {
   .editor-actions > div {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflow-editor__actions > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workflow-editor__actions .save-hint {
+    text-align: right;
+  }
+
+  .saved-destination {
+    padding: 14px;
+  }
+
+  .saved-destination__actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .editor-actions button {

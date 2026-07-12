@@ -13,8 +13,11 @@ import { WorkflowRegistry } from './WorkflowRegistry'
 import { useWorkflowRegistry } from './useWorkflowRegistry'
 
 vi.mock('../../api/workflowLinks', () => ({
+  createWorkflowLink: vi.fn(),
+  deleteWorkflowLink: vi.fn(),
   getWorkflowLink: vi.fn(),
   listWorkflowLinks: vi.fn(),
+  updateWorkflowLink: vi.fn(),
 }))
 
 const timestamp = '2026-07-12T12:30:00Z'
@@ -446,7 +449,7 @@ describe('Workflow Links directory', () => {
     expect(screen.getByTestId('draft-description')).toHaveTextContent('Unsaved description')
     expect(screen.getByTestId('pending-tag')).toHaveTextContent('pending route')
     expect(screen.getByRole('region', { name: 'Workflow link workbench' })).toHaveTextContent(
-      'Protected route full local reference',
+      'Unsaved description',
     )
   })
 

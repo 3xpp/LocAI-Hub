@@ -1,10 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import App from './App'
 import { listPrompts } from './api/prompts'
-import { listWorkflowLinks } from './api/workflowLinks'
+import {
+  createWorkflowLink,
+  deleteWorkflowLink,
+  getWorkflowLink,
+  listWorkflowLinks,
+  type WorkflowLink,
+} from './api/workflowLinks'
 
 vi.mock('./api/client', () => ({
   getHealth: vi.fn().mockResolvedValue({
@@ -29,12 +35,38 @@ vi.mock('./api/prompts', () => ({
 }))
 
 vi.mock('./api/workflowLinks', () => ({
+  createWorkflowLink: vi.fn(),
+  deleteWorkflowLink: vi.fn(),
   getWorkflowLink: vi.fn(),
   listWorkflowLinks: vi.fn(),
+  updateWorkflowLink: vi.fn(),
 }))
 
 const listPromptsMock = vi.mocked(listPrompts)
 const listWorkflowLinksMock = vi.mocked(listWorkflowLinks)
+const getWorkflowLinkMock = vi.mocked(getWorkflowLink)
+const createWorkflowLinkMock = vi.mocked(createWorkflowLink)
+const deleteWorkflowLinkMock = vi.mocked(deleteWorkflowLink)
+
+const timestamp = '2026-07-12T12:30:00Z'
+
+const workflowLink = (id: number, title: string): WorkflowLink => ({
+  id,
+  title,
+  url: `http://localhost:5678/workflow/${id}`,
+  description: `${title} description`,
+  tags: ['local'],
+  created_at: timestamp,
+  updated_at: timestamp,
+})
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
+}
 
 beforeEach(() => {
   listPromptsMock.mockReset().mockResolvedValue({
@@ -49,6 +81,9 @@ beforeEach(() => {
     limit: 50,
     offset: 0,
   })
+  getWorkflowLinkMock.mockReset()
+  createWorkflowLinkMock.mockReset()
+  deleteWorkflowLinkMock.mockReset()
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockImplementation((query: string) => ({
@@ -62,6 +97,10 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     })),
   )
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 it('navigates among Overview, Prompts, and Workflows through one masthead', async () => {
@@ -93,4 +132,85 @@ it('keeps Prompts active when its dirty-state guard cancels Workflows navigation
   expect(screen.getByRole('heading', { name: 'Prompt registry' })).toBeInTheDocument()
   expect(screen.getByLabelText(/Prompt title/i)).toHaveValue('Unsaved prompt')
   expect(listWorkflowLinksMock).not.toHaveBeenCalled()
+})
+
+it.each(['Overview', 'Prompts'])('keeps Workflows active when its dirty guard cancels %s navigation', async (target) => {
+  const confirm = vi.fn().mockReturnValue(false)
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await screen.findByText('No workflow links saved yet')
+  await user.click(screen.getByRole('button', { name: 'New link' }))
+  const title = screen.getByRole('textbox', { name: /Link title/i })
+  await user.type(title, 'Unsaved workflow link')
+  await user.click(screen.getByRole('button', { name: target }))
+
+  expect(confirm).toHaveBeenCalledWith('Discard unsaved workflow link changes?')
+  expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
+  expect(title).toHaveValue('Unsaved workflow link')
+})
+
+it('blocks Overview and Prompts while a workflow save is pending', async () => {
+  const pendingSave = deferred<WorkflowLink>()
+  createWorkflowLinkMock.mockReturnValueOnce(pendingSave.promise)
+  const confirm = vi.fn()
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await screen.findByText('No workflow links saved yet')
+  await user.click(screen.getByRole('button', { name: 'New link' }))
+  await user.type(screen.getByRole('textbox', { name: /Link title/i }), 'Pending navigation')
+  await user.type(
+    screen.getByRole('textbox', { name: /Destination URL/i }),
+    'http://localhost:5678/pending-navigation',
+  )
+  await user.click(screen.getByRole('button', { name: 'Save link' }))
+  expect(screen.getByText('Saving locally…')).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Prompts' }))
+  expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
+  expect(confirm).not.toHaveBeenCalled()
+})
+
+it('blocks Overview and Prompts while workflow deletion is pending', async () => {
+  const target = workflowLink(4, 'Pending delete navigation')
+  const pendingDelete = deferred<void>()
+  listWorkflowLinksMock.mockResolvedValueOnce({
+    items: [
+      {
+        id: target.id,
+        title: target.title,
+        url: target.url,
+        description_preview: target.description,
+        tags: target.tags,
+        created_at: target.created_at,
+        updated_at: target.updated_at,
+      },
+    ],
+    total: 1,
+    limit: 50,
+    offset: 0,
+  })
+  getWorkflowLinkMock.mockResolvedValueOnce(target)
+  deleteWorkflowLinkMock.mockReturnValueOnce(pendingDelete.promise)
+  const confirm = vi.fn()
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await screen.findByDisplayValue(target.description)
+  await user.click(screen.getByRole('button', { name: 'Delete' }))
+  await user.click(screen.getByRole('button', { name: 'Delete workflow link' }))
+  expect(screen.getByText('Deleting permanently…')).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Prompts' }))
+  expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
+  expect(confirm).not.toHaveBeenCalled()
 })
