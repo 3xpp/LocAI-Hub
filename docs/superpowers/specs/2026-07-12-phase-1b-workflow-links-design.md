@@ -204,13 +204,21 @@ search behavior and stored values must remain unchanged through the refactor.
 - Define the raw authority as the characters after :// and before the first slash, question mark, or
   number sign. Require a nonempty authority and reject any at sign in it, including empty userinfo.
 - Require a nonempty ASCII hostname. Allow localhost, valid single-label or dotted DNS names,
-  ASCII punycode names, canonical dotted-decimal IPv4, and bracketed IPv6.
+  conservatively validated ASCII punycode names, canonical dotted-decimal IPv4, and bracketed IPv6.
 - DNS labels must be 1–63 ASCII letters, digits, or internal hyphens, must not begin or end with a
   hyphen, the full DNS hostname must be at most 253 characters, and it must not end in a trailing
   dot. A host made only of digits and dots must pass Python's ipaddress.IPv4Address parser and use
   its canonical dotted-decimal spelling.
 - IPv6 must use brackets in the raw authority and pass Python's ipaddress.IPv6Address parser without
   a zone identifier. Unicode hostnames must be entered in ASCII punycode form.
+- Validate every xn-- DNS label independently with the already declared, locked httpx.URL value
+  parser; no HTTP client or request is created. Require raw-label identity, a non-ASCII decoded
+  label, canonical Punycode re-encoding, Unicode 3.2 assignment for every decoded code point, and
+  Unicode-3.2 NFC stability.
+- The frozen Unicode 3.2 rule deliberately rejects some modern-script IDNs that a current browser
+  accepts. It preserves established multilingual domains while preventing the backend from emitting
+  ACE labels that browser ICU/UTS46 versions may reject or reinterpret. Exact equivalence across all
+  browser Unicode tables is not claimed.
 - Allow omitted ports or decimal ports from 1 through 65535. Accessing the parsed port must not
   raise, and the raw port must contain digits only.
 - Allow private-network hosts, paths, query strings, and fragments.
@@ -219,13 +227,16 @@ search behavior and stored values must remain unchanged through the refactor.
 - Reject javascript, data, file, blob, ftp, and custom schemes.
 - Reject remaining whitespace, Unicode control or format characters, and backslashes before parsing.
 - Reject every percent sign in the raw authority, malformed host syntax, unmatched IPv6 brackets,
-  malformed or out-of-range ports, and every value rejected by either parser profile.
+  noncanonical numeric-host forms, malformed or out-of-range ports, and every value outside the
+  backend's conservative browser-stable subset.
 
-The backend is authoritative. The frontend independently checks the same safety invariants when
-validating a server response, because only a runtime-safe persisted URL may become an anchor. A
-committed JSON fixture corpus defines accepted and rejected edge cases for both Python and
-TypeScript. Every fixture must produce the same decision in both implementations; the frontend
-fails closed when its URL parser cannot represent a backend-accepted value safely.
+The backend is authoritative and accepts a conservative subset. The frontend independently checks
+scheme, authority, userinfo, characters, numeric hosts, ports, and its actual browser URL parser
+before producing an anchor. It does not need to reproduce the backend's stricter Unicode-age
+policy; it must fail closed whenever its browser cannot represent a backend-emitted value safely. A
+committed JSON fixture corpus defines common accepted/rejected edge cases for Python and TypeScript,
+and every shared fixture produces the same decision. Backend-only tests document deliberate
+rejection of otherwise browser-valid post-Unicode-3.2 labels.
 
 Before emitting a database record, the backend also validates that its ID is positive, title/URL/
 description equal their canonical normalized forms, tags equal the canonical codec output, and both

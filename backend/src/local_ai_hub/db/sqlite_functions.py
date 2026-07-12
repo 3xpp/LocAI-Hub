@@ -1,13 +1,14 @@
-"""Deterministic SQLite text functions used by prompt queries."""
+"""Deterministic SQLite text functions used by local registry queries."""
 
 import sqlite3
 
 from sqlalchemy import Engine, event
 
-from local_ai_hub.services.prompts import decode_tags, encode_tags
+from local_ai_hub.services.tags import decode_tags, encode_tags
 
 UNICODE_CASEFOLD_FUNCTION = "local_ai_hub_casefold"
-CANONICAL_PROMPT_TAGS_FUNCTION = "local_ai_hub_prompt_tags"
+CANONICAL_TAGS_FUNCTION = "local_ai_hub_tags"
+CANONICAL_PROMPT_TAGS_FUNCTION = CANONICAL_TAGS_FUNCTION
 
 
 def _unicode_casefold(value: object) -> str:
@@ -18,8 +19,8 @@ def _unicode_casefold(value: object) -> str:
     return value.casefold()
 
 
-def _canonical_prompt_tags(value: object) -> str:
-    """Return the canonical valid subset of a stored prompt tag string."""
+def _canonical_tags(value: object) -> str:
+    """Return the canonical valid subset of a stored tag string."""
 
     if not isinstance(value, str):
         return ""
@@ -27,7 +28,7 @@ def _canonical_prompt_tags(value: object) -> str:
 
 
 def register_sqlite_functions(engine: Engine) -> None:
-    """Register local prompt text helpers on every connection for one SQLite engine."""
+    """Register local text helpers on every connection for one SQLite engine."""
 
     if engine.dialect.name != "sqlite":
         return
@@ -42,9 +43,9 @@ def register_sqlite_functions(engine: Engine) -> None:
             deterministic=True,
         )
         dbapi_connection.create_function(
-            CANONICAL_PROMPT_TAGS_FUNCTION,
+            CANONICAL_TAGS_FUNCTION,
             1,
-            _canonical_prompt_tags,
+            _canonical_tags,
             deterministic=True,
         )
 

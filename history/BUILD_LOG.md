@@ -908,3 +908,82 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 1b implementation plan`
+
+## 2026-07-12 — Phase 1B workflow-link domain contracts
+
+**Status:** Complete
+
+### Added
+
+- Added a shared field-oriented validation error and extracted canonical tag normalization,
+  deduplication, encoding, and defensive legacy decoding into a domain-neutral service.
+- Added the pure Workflow Links title, URL, description, search, and preview contract with fixed,
+  non-reflective URL failures.
+- Added one inert cross-runtime JSON corpus containing 15 accepted and 32 rejected URL decisions,
+  plus backend coverage for all approved length, DNS, IP, port, character, and authority boundaries.
+
+### Compatibility
+
+- Preserved every existing Prompt tag import, constant, error alias, canonical storage value,
+  Unicode case-folding behavior, malformed-fragment tolerance, and exact-tag filter behavior.
+- Renamed the registered SQLite helper to `local_ai_hub_tags`, retained
+  `CANONICAL_PROMPT_TAGS_FUNCTION` as a compatibility alias, and moved Prompt queries to the neutral
+  function name.
+
+### Decisions
+
+- Preserve the trimmed URL code-point-for-code-point rather than rewriting scheme, host, path,
+  query, fragment, or case after validation.
+- Allow only literal absolute HTTP(S) destinations with approved ASCII DNS, canonical IPv4, or
+  bracketed IPv6 authorities and ports 1–65535; reject URL userinfo, authority percent escapes,
+  malformed or noncanonical hosts, whitespace, control/format characters, and backslashes.
+- Validate every `xn--` label independently through the already locked `httpx.URL` value parser;
+  require raw-host identity, a non-ASCII decoded value, canonical stdlib punycode re-encoding,
+  Unicode 3.2-assigned characters, and Unicode 3.2 NFC identity. Reject browser-reinterpreted
+  decimal or `0x` terminal labels unless the complete host is already canonical dotted IPv4.
+- Deliberately keep the authoritative backend ACE policy as a conservative subset of browser-safe
+  hosts. The later frontend validator may accept the browser-safe superset, but server validation
+  remains decisive; this compatibility tradeoff is now documented in the approved design and plan.
+- Keep URL validation entirely local and pure. The service uses the existing `httpx.URL` value type
+  only; it never constructs a Client or AsyncClient and never calls a request API, socket, DNS
+  lookup, or destination. The fixture is read from disk and parsed only as strings.
+
+### Verification
+
+- Confirmed the test-first red state: the new service test could not collect while the shared tag
+  module was absent.
+- Focused domain and Prompt regression gates passed: 170 tests total, comprising 140 workflow-link
+  service cases and 30 Prompt service/repository compatibility cases.
+- The full backend regression passed all 219 tests with only the already documented Starlette
+  `TestClient` deprecation warning.
+- Ruff lint passed for backend source and tests; Ruff formatting verified 34 files; strict mypy
+  passed across 24 backend source files.
+- The first static pass exposed only explicit compatibility-export linting and one mypy narrowing
+  issue; both were corrected before the complete green gate above.
+- A read-only parity review then exposed invalid punycode and WHATWG numeric-host forms accepted by
+  Python but rejected or rewritten by browsers. Thirteen focused assertions reproduced the gap
+  before the hostname and numeric-terminal rules closed it with fixed non-reflective errors.
+- A local Node URL-constructor check confirmed the three malformed punycode labels are rejected,
+  the hexadecimal/mixed numeric forms rewrite to loopback addresses, `example.1` is rejected, and
+  the intentionally valid `dead.beef` host remains unchanged; no destination was contacted.
+- Python 3.12.3 then reproduced a version-specific uppercase ACE gap: `XN--A`, `Xn--0`, and
+  `XN--ABC` passed before case-folding. A further review showed that the stdlib IDNA2003 round trip
+  also rejected browser-valid `xn--fa-hia` and `xn--zca` while accepting invalid `xn--00b`.
+- Replacing that codec boundary with the existing locked `httpx` 0.28.1 URL value parser made an
+  intermediate Python 3.12.3 check pass 10 accepted plus 25 rejected corpus decisions. A narrow
+  inert comparison of 16 lowercase, uppercase, and mixed-case ACE labels also matched Node, but
+  broader independent reviews subsequently found counterexamples outside that sample.
+- The final conservative guard added per-label canonical punycode and Unicode 3.2 assigned/NFC
+  checks. Python 3.12.3 passed the expanded 15 accepted plus 32 rejected shared decisions, including
+  Arabic/CJK, embedded, multiple, uppercase, and five reviewer counterexamples; backend-only tests
+  also prove deliberate rejection of browser-valid post-3.2 labels `xn--v43d` and `xn--oh5h`.
+- Explicit per-label regressions cover both directions of the compatibility tradeoff—httpx-valid
+  labels rejected by browsers and browser-valid labels conservatively rejected by the backend—and
+  prove that an invalid `xn--kybrm` label is still rejected when embedded after a valid prefix.
+- Independent broad parity audits over 187,491 labels, another 140,000 labels, and a third run of
+  200,000 standalone plus 60,000 embedded hosts found zero backend-accept/Node-reject result with
+  the final guard.
+
+### Commit
+
+- `feat: add workflow link domain contracts`

@@ -73,6 +73,13 @@ them.
     {"name": "canonical-ipv4", "value": "http://192.168.1.20:8080/dashboard"},
     {"name": "bracketed-ipv6", "value": "http://[::1]:5678/workflow/abc"},
     {"name": "punycode", "value": "https://xn--bcher-kva.example/docs"},
+    {"name": "modern-punycode-sharp-s", "value": "https://xn--fa-hia.example/docs"},
+    {"name": "modern-punycode-single-sharp-s", "value": "https://xn--zca.example/docs"},
+    {"name": "arabic-punycode", "value": "https://xn--mgbh0fb.example/docs"},
+    {"name": "cjk-punycode", "value": "https://xn--fsqu00a.example/docs"},
+    {"name": "embedded-punycode", "value": "https://docs.xn--bcher-kva.example/path"},
+    {"name": "multiple-punycode", "value": "https://xn--bcher-kva.xn--caf-dma.example/path"},
+    {"name": "uppercase-punycode", "value": "https://XN--BCHER-KVA.example/path"},
     {"name": "uppercase-scheme-host", "value": "HTTPS://EXAMPLE.COM/CaseSensitivePath"},
     {"name": "outer-whitespace-trimmed", "value": "  http://localhost:3000/path  "}
   ],
@@ -88,10 +95,22 @@ them.
     {"name": "raw-tab", "value": "http://localhost/\tworkflow"},
     {"name": "backslash", "value": "http://localhost\\workflow"},
     {"name": "unicode-host", "value": "https://bücher.example/docs"},
+    {"name": "invalid-punycode", "value": "https://xn--abc.example/docs"},
+    {"name": "invalid-uppercase-punycode", "value": "https://XN--ABC.example/docs"},
+    {"name": "invalid-combining-punycode", "value": "https://xn--00b.example/docs"},
+    {"name": "embedded-invalid-punycode", "value": "https://docs.xn--abc.example/docs"},
+    {"name": "unassigned-punycode-kybrm", "value": "https://xn--kybrm.example/docs"},
+    {"name": "unassigned-punycode-kwb3uafp", "value": "https://xn--kwb3uafp.example/docs"},
+    {"name": "unassigned-punycode-gzblqq6v", "value": "https://xn--gzblqq6v.example/docs"},
+    {"name": "unassigned-punycode-fr0n4i", "value": "https://xn--fr0n4i.example/docs"},
+    {"name": "unassigned-punycode-dxbxr6t", "value": "https://xn--dxbxr6t.example/docs"},
+    {"name": "embedded-unassigned-punycode", "value": "https://prefix.xn--kybrm.example/docs"},
     {"name": "trailing-dot", "value": "http://localhost./workflow"},
     {"name": "percent-authority", "value": "http://local%68ost/workflow"},
     {"name": "numeric-shorthand", "value": "http://127.1/workflow"},
     {"name": "leading-zero-ipv4", "value": "http://127.000.000.001/workflow"},
+    {"name": "whatwg-hex-ipv4", "value": "http://0x7f000001/workflow"},
+    {"name": "numeric-terminal-dns", "value": "http://example.1/workflow"},
     {"name": "port-zero", "value": "http://localhost:0/workflow"},
     {"name": "port-too-large", "value": "http://localhost:65536/workflow"},
     {"name": "empty-port", "value": "http://localhost:/workflow"},
@@ -243,7 +262,11 @@ values, internal whitespace, Unicode category C, and backslash; require a case-i
 http:// or https:// prefix; isolate raw authority; reject @ and % in authority; use urlsplit; validate
 ASCII DNS labels and total length, canonical numeric IPv4 through ipaddress.IPv4Address, bracketed
 IPv6 through ipaddress.IPv6Address without a zone, and decimal port 1–65535; preserve and return the
-trimmed input. Raise only fixed field-oriented messages.
+trimmed input. Reject WHATWG hexadecimal/mixed/numeric-terminal host forms. Validate every xn-- label
+independently with an inert httpx.URL value object, raw-label identity, non-ASCII decode, canonical
+Punycode re-encoding, Unicode-3.2 assigned code points, and Unicode-3.2 NFC identity. Shared fixtures
+cover established accepted labels plus browser-rejected cases; backend-only tests document
+conservative rejection of browser-valid post-3.2 labels. Raise only fixed field-oriented messages.
 
 - [ ] **Step 6: Run domain and Prompt regression gates**
 
@@ -799,9 +822,12 @@ Expected: collection fails because src/api/workflowLinks.ts does not exist.
 
 workflowLinkUrl.ts implements the same literal scheme, raw authority, userinfo/percent, ASCII host,
 canonical numeric IPv4, bracketed IPv6, port, whitespace/control, and backslash decisions before and
-after new URL(value). It exports isSafeWorkflowLinkUrl and workflowLinkOrigin. Add a BackendHttpError
-class to client.ts with a numeric status and the unchanged safe message Backend returned HTTP N; do
-not parse or expose an error response body. Preserve all Prompt client behavior with regressions.
+after new URL(value). It must reject every shared browser-incompatible ACE fixture. It need not
+duplicate the backend's stricter Unicode-3.2 age filter because only backend-persisted records reach
+the normal UI and new URL(value) remains the browser fail-closed gate. It exports
+isSafeWorkflowLinkUrl and workflowLinkOrigin. Add a BackendHttpError class to client.ts with a
+numeric status and the unchanged safe message Backend returned HTTP N; do not parse or expose an
+error response body. Preserve all Prompt client behavior with regressions.
 
 Define WorkflowLinkSummary, WorkflowLink, WorkflowLinkListResponse, WorkflowLinkWriteInput, and
 WorkflowLinkListQuery. parseWorkflowLink and parseWorkflowLinkList throw only Backend returned an

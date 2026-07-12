@@ -8,7 +8,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from local_ai_hub.db.models import Prompt
 from local_ai_hub.db.sqlite_functions import (
-    CANONICAL_PROMPT_TAGS_FUNCTION,
+    CANONICAL_TAGS_FUNCTION,
     UNICODE_CASEFOLD_FUNCTION,
 )
 from local_ai_hub.services.prompts import encode_tags
@@ -38,7 +38,7 @@ def _prompt_filters(query: str | None, tag: str | None) -> tuple[ColumnElement[b
     filters: list[ColumnElement[bool]] = []
     if query:
         pattern = f"%{_escape_like(query.casefold())}%"
-        canonical_tags = getattr(func, CANONICAL_PROMPT_TAGS_FUNCTION)(Prompt.tags)
+        canonical_tags = getattr(func, CANONICAL_TAGS_FUNCTION)(Prompt.tags)
         unicode_casefold = getattr(func, UNICODE_CASEFOLD_FUNCTION)
         filters.append(
             or_(
@@ -48,7 +48,7 @@ def _prompt_filters(query: str | None, tag: str | None) -> tuple[ColumnElement[b
             )
         )
     if tag:
-        canonical_tags = getattr(func, CANONICAL_PROMPT_TAGS_FUNCTION)(Prompt.tags)
+        canonical_tags = getattr(func, CANONICAL_TAGS_FUNCTION)(Prompt.tags)
         padded_tags = literal(",") + canonical_tags + literal(",")
         pattern = f"%,{_escape_like(tag.casefold())},%"
         filters.append(padded_tags.like(pattern, escape=LIKE_ESCAPE))

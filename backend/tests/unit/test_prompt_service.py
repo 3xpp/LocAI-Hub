@@ -2,6 +2,11 @@ import unicodedata
 
 import pytest
 
+from local_ai_hub.db.sqlite_functions import (
+    CANONICAL_PROMPT_TAGS_FUNCTION,
+    CANONICAL_TAGS_FUNCTION,
+)
+from local_ai_hub.services import tags as shared_tags
 from local_ai_hub.services.prompts import (
     MAX_CONTENT_LENGTH,
     MAX_QUERY_LENGTH,
@@ -18,6 +23,7 @@ from local_ai_hub.services.prompts import (
     normalize_tags,
     normalize_title,
 )
+from local_ai_hub.services.validation import InputValidationError
 
 
 def test_normalize_title_trims_but_content_preserves_edges() -> None:
@@ -68,6 +74,21 @@ def test_tags_are_canonical_deduplicated_and_round_trip() -> None:
     assert decode_tags("code,error review") == tags
     assert decode_tags(None) == ()
     assert decode_tags("") == ()
+
+
+def test_prompt_tag_public_imports_remain_compatible_shared_exports() -> None:
+    assert PromptInputError is InputValidationError
+    assert normalize_tag is shared_tags.normalize_tag
+    assert normalize_tags is shared_tags.normalize_tags
+    assert encode_tags is shared_tags.encode_tags
+    assert decode_tags is shared_tags.decode_tags
+    assert MAX_TAG_COUNT == shared_tags.MAX_TAG_COUNT
+    assert MAX_TAG_LENGTH == shared_tags.MAX_TAG_LENGTH
+
+
+def test_prompt_sqlite_tag_function_name_remains_a_compatible_alias() -> None:
+    assert CANONICAL_TAGS_FUNCTION == "local_ai_hub_tags"
+    assert CANONICAL_PROMPT_TAGS_FUNCTION == CANONICAL_TAGS_FUNCTION
 
 
 def test_tag_casefolding_is_unicode_aware() -> None:
