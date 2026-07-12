@@ -1154,3 +1154,61 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add workflow link frontend contracts`
+
+## 2026-07-12 — Phase 1B searchable workflow-link directory
+
+**Status:** Complete
+
+### Added
+
+- Added workflow-link draft helpers for independent blank drafts, persisted-record adoption,
+  server-style trim-aware dirty comparison, canonical Unicode tag comparison, code-point lengths,
+  and stable merge-by-ID pagination.
+- Added an independent workflow registry controller with debounced free-text search, one exact-tag
+  filter, deterministic pagination, detail selection, retry, desktop standby selection, mobile
+  panes, focus ownership, and draft/pending-tag discard protection.
+- Added the Workflow Links route with a semantic reference list and route-map workbench. Rows show
+  title, runtime-validated origin, explicit empty or bounded description preview, canonical tags,
+  and updated time without creating destination anchors.
+- Added a third Workflows masthead view and centralized Overview, Prompts, and Workflows changes
+  through one navigation function so the existing Prompt dirty guard cannot be bypassed.
+
+### Design and safety decisions
+
+- Extend the established industrial local-console language with a restrained route-map motif:
+  teal route nodes and lines distinguish stored references while existing variables, typography,
+  registry primitives, focus treatment, and reduced-motion behavior remain shared.
+- Keep list and detail requests under separate abort controllers and monotonic generations. Filter
+  changes, retries, disabling, replacement requests, and unmounts invalidate their current owner;
+  late first-page, next-page, or detail completions cannot replace newer state.
+- Preserve loaded detail, draft fields, and pending tag text across list invalidation and errors.
+  Desktop first-record selection runs only from true clean standby; explicit selection or New link
+  disables it immediately, and mobile never auto-selects.
+- Parse row and detail origins only with the existing `workflowLinkOrigin` safety boundary. This
+  milestone adds no anchor, `window.open`, clipboard behavior, provider metadata, favicon request,
+  destination fetch, editor mutation, or mutation placeholder.
+- At 600 px and below, use a true two-row masthead with three equal-width view buttons and 44 px
+  minimum targets. Long titles, origins, descriptions, and tags wrap without relying on color to
+  communicate state.
+
+### Verification
+
+- Confirmed the test-first red state: workflow state and registry suites could not resolve their
+  missing modules, both new App navigation cases failed on the absent Workflows view, and all 160
+  pre-existing frontend tests remained green in that run.
+- The focused workflow state, directory/controller, and App navigation gate passed all 26 tests.
+  Coverage includes initial and background loading, empty and filtered-empty states, retry while
+  retaining detail, 250 ms search, whitespace stability and clearing, exact and combined filters,
+  merge/dedup totals, stale first/page/detail ownership, disable/unmount aborts, clean desktop-only
+  selection, settled mobile focus, pending draft/tag protection, semantic rows, safe origins, and
+  Prompt dirty cancel.
+- The complete frontend regression passed all 186 tests across 11 files. ESLint and TypeScript
+  project-reference typechecking passed.
+- The final Vite production build transformed 48 modules and produced a 251.49 kB JavaScript bundle
+  (75.27 kB gzip) and 35.84 kB CSS bundle (7.34 kB gzip).
+- `git diff --check` passed. No dependency, package lock, backend, database schema, migration,
+  secret, environment file, stored-destination request, or deployment configuration changed.
+
+### Commit
+
+- `feat: add searchable workflow link registry`

@@ -13,6 +13,8 @@ import { ModelList } from './components/ModelList'
 import { OllamaStatusCard } from './components/OllamaStatusCard'
 import { PromptRegistry } from './features/prompts/PromptRegistry'
 import { usePromptRegistry } from './features/prompts/usePromptRegistry'
+import { WorkflowRegistry } from './features/workflows/WorkflowRegistry'
+import { useWorkflowRegistry } from './features/workflows/useWorkflowRegistry'
 
 interface Resource<T> {
   data: T | null
@@ -32,14 +34,17 @@ const messageFrom = (error: unknown) =>
 const wasAborted = (error: unknown, signal: AbortSignal) =>
   signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
 
+type ActiveView = 'overview' | 'prompts' | 'workflows'
+
 export default function App() {
-  const [activeView, setActiveView] = useState<'overview' | 'prompts'>('overview')
+  const [activeView, setActiveView] = useState<ActiveView>('overview')
   const [health, setHealth] = useState(initialResource<HealthResponse>)
   const [ollama, setOllama] = useState(initialResource<OllamaStatusResponse>)
   const [models, setModels] = useState(initialResource<OllamaModelsResponse>)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
   const activeRequest = useRef<AbortController | null>(null)
   const promptRegistry = usePromptRegistry(activeView === 'prompts')
+  const workflowRegistry = useWorkflowRegistry(activeView === 'workflows')
 
   const refresh = useCallback(async () => {
     activeRequest.current?.abort()
@@ -96,9 +101,11 @@ export default function App() {
 
   const refreshing = health.loading || ollama.loading || models.loading
 
-  const showOverview = () => {
+  const navigateTo = (target: ActiveView) => {
+    if (target === activeView) return
     if (activeView === 'prompts' && !promptRegistry.confirmDiscard()) return
-    setActiveView('overview')
+    if (activeView === 'workflows' && !workflowRegistry.confirmDiscard()) return
+    setActiveView(target)
   }
 
   return (
@@ -115,16 +122,23 @@ export default function App() {
             <button
               type="button"
               aria-current={activeView === 'overview' ? 'page' : undefined}
-              onClick={showOverview}
+              onClick={() => navigateTo('overview')}
             >
               Overview
             </button>
             <button
               type="button"
               aria-current={activeView === 'prompts' ? 'page' : undefined}
-              onClick={() => setActiveView('prompts')}
+              onClick={() => navigateTo('prompts')}
             >
               Prompts
+            </button>
+            <button
+              type="button"
+              aria-current={activeView === 'workflows' ? 'page' : undefined}
+              onClick={() => navigateTo('workflows')}
+            >
+              Workflows
             </button>
           </nav>
           <p className="node-label">
@@ -184,8 +198,10 @@ export default function App() {
             <span>Phase 00</span>
           </footer>
         </>
-      ) : (
+      ) : activeView === 'prompts' ? (
         <PromptRegistry controller={promptRegistry} />
+      ) : (
+        <WorkflowRegistry controller={workflowRegistry} />
       )}
     </main>
   )
