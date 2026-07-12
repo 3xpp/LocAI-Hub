@@ -3,14 +3,29 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ConfirmDialog } from './ConfirmDialog'
-import { TagInput } from './TagInput'
+import { ConfirmDialog } from '../shared/ConfirmDialog'
+import { TagInput } from '../shared/TagInput'
 
-function TagHarness({ initialTags = [] }: { initialTags?: string[] }) {
+function TagHarness({
+  initialTags = [],
+  label = 'Prompt tags',
+  subjectName = 'prompt',
+}: {
+  initialTags?: string[]
+  label?: string
+  subjectName?: string
+}) {
   const [tags, setTags] = useState<string[]>(initialTags)
   const [value, setValue] = useState('')
   return (
-    <TagInput tags={tags} value={value} onChange={setTags} onValueChange={setValue} />
+    <TagInput
+      label={label}
+      subjectName={subjectName}
+      tags={tags}
+      value={value}
+      onChange={setTags}
+      onValueChange={setValue}
+    />
   )
 }
 
@@ -23,10 +38,18 @@ function DialogHarness({ onConfirm }: { onConfirm: () => void }) {
       </button>
       <ConfirmDialog
         open={open}
-        promptTitle="Sensitive local prompt"
+        eyebrow="Permanent action"
+        heading="Delete prompt?"
+        subject="Sensitive local prompt"
+        explanation="will be permanently removed from this local registry. This action cannot be undone."
+        confirmLabel="Delete prompt"
+        pendingLabel="Deleting…"
         busy={false}
         onCancel={() => setOpen(false)}
-        onConfirm={onConfirm}
+        onConfirm={() => {
+          onConfirm()
+          setOpen(false)
+        }}
       />
     </>
   )
@@ -91,6 +114,24 @@ describe('TagInput', () => {
     expect(input).toHaveValue('構成中')
     expect(screen.queryByRole('button', { name: 'Remove tag 構成中' })).not.toBeInTheDocument()
   })
+
+  it('uses domain-neutral labels and limit feedback for workflow links', async () => {
+    const tags = Array.from({ length: 10 }, (_, index) => `tag-${index}`)
+    const user = userEvent.setup()
+    render(
+      <TagHarness
+        initialTags={tags}
+        label="Workflow link tags"
+        subjectName="workflow link"
+      />,
+    )
+
+    const input = screen.getByRole('textbox', { name: 'Workflow link tags' })
+    await user.type(input, 'overflow')
+
+    expect(screen.getByText('A workflow link can contain at most 10 tags')).toBeInTheDocument()
+    expect(screen.queryByText('A prompt can contain at most 10 tags')).not.toBeInTheDocument()
+  })
 })
 
 describe('ConfirmDialog', () => {
@@ -117,6 +158,7 @@ describe('ConfirmDialog', () => {
     await user.click(opener)
     await user.click(screen.getByRole('button', { name: 'Delete prompt' }))
     expect(confirm).toHaveBeenCalledOnce()
+    expect(opener).toHaveFocus()
 
     await user.click(opener)
     fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
@@ -152,7 +194,12 @@ describe('ConfirmDialog', () => {
     render(
       <ConfirmDialog
         open
-        promptTitle="Busy prompt"
+        eyebrow="Permanent action"
+        heading="Delete workflow link?"
+        subject="Busy workflow link"
+        explanation="will be permanently removed from this local registry. This action cannot be undone."
+        confirmLabel="Delete workflow link"
+        pendingLabel="Deleting link…"
         busy
         onCancel={cancel}
         onConfirm={confirm}
@@ -165,6 +212,48 @@ describe('ConfirmDialog', () => {
     expect(cancel).not.toHaveBeenCalled()
     expect(confirm).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Deleting link…' })).toBeDisabled()
+  })
+
+  it('generates unique accessible heading and description IDs per dialog', () => {
+    const { container } = render(
+      <>
+        <ConfirmDialog
+          open={false}
+          eyebrow="Permanent action"
+          heading="Delete prompt?"
+          subject="Prompt one"
+          explanation="will be permanently removed."
+          confirmLabel="Delete prompt"
+          pendingLabel="Deleting…"
+          busy={false}
+          onCancel={vi.fn()}
+          onConfirm={vi.fn()}
+        />
+        <ConfirmDialog
+          open={false}
+          eyebrow="Permanent action"
+          heading="Delete workflow link?"
+          subject="Workflow link one"
+          explanation="will be permanently removed."
+          confirmLabel="Delete workflow link"
+          pendingLabel="Deleting link…"
+          busy={false}
+          onCancel={vi.fn()}
+          onConfirm={vi.fn()}
+        />
+      </>,
+    )
+
+    const dialogs = Array.from(container.querySelectorAll('dialog'))
+    const headingIds = dialogs.map((dialog) => dialog.getAttribute('aria-labelledby'))
+    const descriptionIds = dialogs.map((dialog) => dialog.getAttribute('aria-describedby'))
+
+    expect(new Set(headingIds).size).toBe(2)
+    expect(new Set(descriptionIds).size).toBe(2)
+    for (const id of [...headingIds, ...descriptionIds]) {
+      expect(id).not.toBeNull()
+      expect(container.querySelector(`[id="${id}"]`)).not.toBeNull()
+    }
   })
 })

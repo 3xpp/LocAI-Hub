@@ -1,8 +1,13 @@
-import { useEffect, useRef, type SyntheticEvent } from 'react'
+import { useEffect, useId, useRef, type SyntheticEvent } from 'react'
 
 interface ConfirmDialogProps {
   open: boolean
-  promptTitle: string
+  eyebrow: string
+  heading: string
+  subject: string
+  explanation: string
+  confirmLabel: string
+  pendingLabel: string
   busy: boolean
   onCancel: () => void
   onConfirm: () => void
@@ -10,11 +15,18 @@ interface ConfirmDialogProps {
 
 export function ConfirmDialog({
   open,
-  promptTitle,
+  eyebrow,
+  heading,
+  subject,
+  explanation,
+  confirmLabel,
+  pendingLabel,
   busy,
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
+  const headingId = useId()
+  const descriptionId = useId()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
@@ -45,23 +57,36 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       className="confirm-dialog"
-      aria-labelledby="delete-dialog-title"
-      aria-describedby="delete-dialog-description"
+      aria-labelledby={headingId}
+      aria-describedby={descriptionId}
       onCancel={handleCancel}
     >
       <div className="confirm-dialog__body">
-        <p className="eyebrow">Permanent action</p>
-        <h2 id="delete-dialog-title">Delete prompt?</h2>
-        <p id="delete-dialog-description">
-          <strong>{promptTitle}</strong> will be permanently removed from this local registry. This
-          action cannot be undone.
+        <p className="eyebrow">{eyebrow}</p>
+        <h2 id={headingId}>{heading}</h2>
+        <p id={descriptionId}>
+          <strong>{subject}</strong> {explanation}
         </p>
         <div className="confirm-dialog__actions">
-          <button ref={cancelRef} type="button" disabled={busy} onClick={onCancel}>
+          <button
+            ref={cancelRef}
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (!busy) onCancel()
+            }}
+          >
             Cancel
           </button>
-          <button type="button" className="danger-button" disabled={busy} onClick={onConfirm}>
-            {busy ? 'Deleting…' : 'Delete prompt'}
+          <button
+            type="button"
+            className="danger-button"
+            disabled={busy}
+            onClick={() => {
+              if (!busy) onConfirm()
+            }}
+          >
+            {busy ? pendingLabel : confirmLabel}
           </button>
         </div>
       </div>

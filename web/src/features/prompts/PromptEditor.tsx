@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 
-import { ConfirmDialog } from './ConfirmDialog'
+import { ConfirmDialog } from '../shared/ConfirmDialog'
+import { TagInput } from '../shared/TagInput'
 import { promptTextLength } from './promptState'
-import { TagInput } from './TagInput'
 import type { PromptRegistryController } from './usePromptRegistry'
 
 interface PromptEditorProps {
@@ -199,6 +199,8 @@ export function PromptEditor({ controller }: PromptEditorProps) {
         </label>
 
         <TagInput
+          label="Prompt tags"
+          subjectName="prompt"
           tags={controller.draft.tags}
           value={controller.pendingTag}
           disabled={busy}
@@ -277,7 +279,12 @@ export function PromptEditor({ controller }: PromptEditorProps) {
 
       <ConfirmDialog
         open={deleteOpen}
-        promptTitle={persisted?.title ?? 'this prompt'}
+        eyebrow="Permanent action"
+        heading="Delete prompt?"
+        subject={persisted?.title ?? 'This prompt'}
+        explanation="will be permanently removed from this local registry. This action cannot be undone."
+        confirmLabel="Delete prompt"
+        pendingLabel="Deleting…"
         busy={busy}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={confirmDelete}

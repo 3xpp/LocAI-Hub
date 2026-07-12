@@ -1101,3 +1101,56 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add workflow link api`
+
+## 2026-07-12 — Phase 1B frontend contracts and shared registry primitives
+
+**Status:** Complete
+
+### Added
+
+- Added a browser-gated workflow-link URL validator and safe origin helper. It checks the literal
+  scheme and authority, credentials, characters, ASCII host, DNS labels, ACE labels, canonical
+  IPv4, bracketed IPv6, and ports before and after the browser `URL` parser accepts a value.
+- Added strict runtime contracts and request functions for workflow-link list, detail, create,
+  replace, and 204 deletion responses, including exact query encoding and cancellation support.
+- Added a typed `BackendHttpError` that retains only the numeric status and the existing safe
+  `Backend returned HTTP N` message without decoding an error response body.
+- Added domain-neutral Unicode/tag helpers, TagInput, and ConfirmDialog primitives while preserving
+  Prompt compatibility exports and every existing prompt editor interaction.
+
+### Design and safety decisions
+
+- Preserve the established industrial local-console visual language and existing CSS hooks. This
+  milestone moves proven behavior without introducing a UI library, new styling system, or visual
+  redesign.
+- Keep the browser URL check fail-closed but intentionally allow the browser-safe superset described
+  by the approved contract; the backend remains authoritative and may conservatively reject newer
+  Unicode ACE labels.
+- Reject malformed response IDs, titles, URLs, descriptions, previews, tags, timestamps, counts,
+  and pagination before typed data reaches React. Summary records cannot contain a full description,
+  and full records cannot contain a summary preview.
+- Never parse backend error bodies and never issue a request to a stored workflow destination.
+  Fetch calls remain limited to the Hub's relative `/api/workflow-links` routes.
+- Generate unique dialog heading and description IDs with `useId`, retain Cancel-first focus and
+  focus return, and lock both Escape/click actions while a destructive mutation is pending.
+
+### Verification
+
+- Confirmed the new URL and workflow-client tests began red while their implementation modules were
+  absent, then passed all 111 API/URL/Prompt-client cases after implementation.
+- The shared registry and Prompt component track passed 49 focused tests covering Unicode code
+  points, established case folding, Prompt/workflow-link labels, tag limits, unique accessible IDs,
+  Cancel, Escape, Confirm, focus return, and pending-state locking.
+- The combined and complete frontend suite passed all 160 tests across 8 files. Every one of the 15
+  accepted and 32 rejected shared URL cases produced the intended browser decision.
+- ESLint and TypeScript project-reference typechecking passed. The Vite production build transformed
+  42 modules and produced a 229.48 kB JavaScript bundle (70.94 kB gzip) plus the unchanged 28.82 kB
+  CSS bundle (6.23 kB gzip).
+- Prompt-local TagInput and ConfirmDialog files were removed only after Prompt regressions passed;
+  `promptTextLength` and `normalizePromptTag` remain compatible exports.
+- `git diff --check` passed. No dependency, package lock, style, backend, migration, secret,
+  environment file, stored-destination request, or deployment configuration changed.
+
+### Commit
+
+- `feat: add workflow link frontend contracts`

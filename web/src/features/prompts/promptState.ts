@@ -1,4 +1,10 @@
 import type { Prompt, PromptSummary } from '../../api/prompts'
+import { normalizeRegistryTagForComparison } from '../shared/registryState'
+
+export {
+  normalizeRegistryTag as normalizePromptTag,
+  registryTextLength as promptTextLength,
+} from '../shared/registryState'
 
 export type PromptEditorMode = 'empty' | 'new' | 'selected'
 
@@ -20,36 +26,10 @@ export const promptToDraft = (prompt: Prompt): PromptDraft => ({
   tags: [...prompt.tags],
 })
 
-function unicodeCaseFold(value: string): string {
-  return Array.from(value, (character) => {
-    const codePoint = character.codePointAt(0) ?? 0
-    const isCherokee =
-      (codePoint >= 0x13a0 && codePoint <= 0x13ff) ||
-      (codePoint >= 0xab70 && codePoint <= 0xabbf)
-    if (character === 'ı') return character
-    if (isCherokee) return character.toUpperCase()
-    return character.toUpperCase().toLowerCase().replaceAll('ß', 'ss').replaceAll('ς', 'σ')
-  }).join('')
-}
-
-export const promptTextLength = (value: string) => Array.from(value).length
-
-export function normalizePromptTag(value: string): string {
-  if (value.includes(',')) throw new Error('Tags cannot contain commas')
-  if (/\p{C}/u.test(value)) throw new Error('Tags cannot contain control characters')
-  const normalized = value.trim().replace(/\s+/gu, ' ').split(' ').map(unicodeCaseFold).join(' ')
-  if (normalized.length === 0) throw new Error('Enter a tag first')
-  if (promptTextLength(normalized) > 30) throw new Error('Tags can contain at most 30 characters')
-  return normalized
-}
-
-const normalizeTagForComparison = (tag: string) =>
-  tag.trim().replace(/\s+/gu, ' ').split(' ').map(unicodeCaseFold).join(' ')
-
 const normalizeTagsForComparison = (tags: string[]) => {
   const seen = new Set<string>()
   return tags
-    .map(normalizeTagForComparison)
+    .map(normalizeRegistryTagForComparison)
     .filter((tag) => {
       if (tag.length === 0 || seen.has(tag)) return false
       seen.add(tag)

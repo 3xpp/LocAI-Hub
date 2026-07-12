@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { BackendHttpError } from './client'
 import {
   createPrompt,
   deletePrompt,
@@ -107,12 +108,19 @@ describe('prompt API client', () => {
   })
 
   it('preserves shared HTTP, network, and invalid JSON errors', async () => {
+    const json = vi.fn().mockResolvedValue({ detail: 'must remain private' })
     fetchMock
-      .mockResolvedValueOnce(jsonResponse({ detail: 'offline' }, 503))
+      .mockResolvedValueOnce({ ok: false, status: 503, json } as unknown as Response)
       .mockRejectedValueOnce(new TypeError('network detail'))
       .mockResolvedValueOnce(new Response('{', { status: 200 }))
 
-    await expect(listPrompts({})).rejects.toThrow('Backend returned HTTP 503')
+    const httpError = await listPrompts({}).catch((reason: unknown) => reason)
+    expect(httpError).toBeInstanceOf(BackendHttpError)
+    expect(httpError).toMatchObject({
+      status: 503,
+      message: 'Backend returned HTTP 503',
+    })
+    expect(json).not.toHaveBeenCalled()
     await expect(listPrompts({})).rejects.toThrow('Unable to reach the backend')
     await expect(listPrompts({})).rejects.toThrow('Backend returned an invalid response')
   })

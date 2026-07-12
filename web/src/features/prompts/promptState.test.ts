@@ -5,6 +5,8 @@ import {
   isPromptDraftDirty,
   mergePromptPages,
   newPromptDraft,
+  normalizePromptTag,
+  promptTextLength,
   promptToDraft,
 } from './promptState'
 
@@ -62,6 +64,11 @@ describe('prompt state helpers', () => {
         { ...baseline, tags: ['STRASSE', 'ff', 's', 'review'] },
       ),
     ).toBe(false)
+  })
+
+  it('preserves the public Prompt tag and Unicode length helpers', () => {
+    expect(promptTextLength('A🤖')).toBe(2)
+    expect(normalizePromptTag('  Straße   Review  ')).toBe('strasse review')
   })
 
   it('merges pages by ID, preserves order, and adopts fresher duplicate values', () => {

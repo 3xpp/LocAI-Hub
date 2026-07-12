@@ -25,6 +25,16 @@ type ResponseParser<T> = (payload: unknown) => T
 
 const INVALID_RESPONSE_MESSAGE = 'Backend returned an invalid response'
 
+export class BackendHttpError extends Error {
+  readonly status: number
+
+  constructor(status: number) {
+    super(`Backend returned HTTP ${status}`)
+    this.name = 'BackendHttpError'
+    this.status = status
+  }
+}
+
 export interface JsonRequestOptions {
   method?: 'GET' | 'POST' | 'PUT'
   body?: unknown
@@ -123,7 +133,7 @@ async function fetchBackend(
   }
 
   if (!response.ok) {
-    throw new Error(`Backend returned HTTP ${response.status}`)
+    throw new BackendHttpError(response.status)
   }
 
   return response

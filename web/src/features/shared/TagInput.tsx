@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 
-import { normalizePromptTag } from './promptState'
+import { normalizeRegistryTag } from './registryState'
 
 interface TagInputProps {
+  label: string
+  subjectName: string
   tags: string[]
   value: string
   onChange: (tags: string[]) => void
@@ -11,6 +13,8 @@ interface TagInputProps {
 }
 
 export function TagInput({
+  label,
+  subjectName,
   tags,
   value,
   onChange,
@@ -21,16 +25,17 @@ export function TagInput({
   const feedbackId = useId()
   const [feedback, setFeedback] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const limitMessage = `A ${subjectName} can contain at most 10 tags`
 
   useEffect(() => setFeedback(null), [tags])
 
   let validationFeedback: string | null = null
   if (value.length > 0) {
     if (tags.length >= 10) {
-      validationFeedback = 'A prompt can contain at most 10 tags'
+      validationFeedback = limitMessage
     } else {
       try {
-        normalizePromptTag(value)
+        normalizeRegistryTag(value)
       } catch (error) {
         validationFeedback = error instanceof Error ? error.message : 'Tag is invalid'
       }
@@ -40,14 +45,14 @@ export function TagInput({
 
   const commit = () => {
     try {
-      const tag = normalizePromptTag(value)
+      const tag = normalizeRegistryTag(value)
       if (tags.includes(tag)) {
         setFeedback('That tag is already attached')
         onValueChange('')
         return
       }
       if (tags.length >= 10) {
-        setFeedback('A prompt can contain at most 10 tags')
+        setFeedback(limitMessage)
         return
       }
       onChange([...tags, tag])
@@ -80,7 +85,7 @@ export function TagInput({
 
   return (
     <div className="tag-input">
-      <label htmlFor={inputId}>Prompt tags</label>
+      <label htmlFor={inputId}>{label}</label>
       <div className="tag-input__control">
         {tags.map((tag) => (
           <span className="tag-chip" key={tag}>
