@@ -3,15 +3,16 @@
 A local-first control room for Ollama, reusable prompts, workflow references, and homelab automation.
 
 > [!WARNING]
-> The app has no authentication. Keep it on your own machine. Prompt CRUD can reveal, change, or
-> permanently delete local data. Do not expose the dashboard or API to a public or untrusted network
-> without authentication, authorization, TLS, and a deployment security review.
+> The app has no authentication. Keep it on your own machine. Prompt and Workflow Link CRUD can
+> reveal, change, or permanently delete local data. Saved workflow URLs—including query strings and
+> fragments—are returned by the API. Do not expose the dashboard or API to a public or untrusted
+> network without authentication, authorization, TLS, and a deployment security review.
 
 ## What it does
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-Phase 1A provides:
+The Phase 1B implementation currently provides:
 
 - backend service health;
 - safe Ollama online/offline status;
@@ -22,12 +23,18 @@ Phase 1A provides:
 - server-side prompt search, exact canonical-tag filtering, and deterministic pagination;
 - a responsive prompt registry with raw-text editing, explicit save, dirty-draft protection,
   clipboard copy, and deletion confirmation;
+- a dedicated Workflow Links registry with complete CRUD, server search across title, URL,
+  description, and tags, exact-tag filtering, and deterministic pagination;
+- a responsive workflow-link editor with explicit save, dirty-draft protection, persisted-URL
+  Copy/Open actions, permanent-delete confirmation, async race ownership, and mobile focus return;
 - a responsive React dashboard;
 - repeatable uv, pnpm, Make, and Docker Compose workflows;
 - backend and frontend behavior tests that do not require a live Ollama server.
 
 It remains intentionally read-only around Ollama and does not expose Docker, n8n, shell,
-model-management, prompt-execution, or cloud-AI controls.
+model-management, prompt-execution, provider synchronization, or cloud-AI controls. Workflow links
+are stored references, not live service integrations. Implementation is complete; final
+repository-wide Phase 1B acceptance is still in progress.
 
 ## Architecture
 
@@ -41,7 +48,8 @@ Vite dashboard (127.0.0.1:5173)
 FastAPI (127.0.0.1:8000)
   |-- health API
   |-- read-only Ollama client --> Ollama /api/tags
-  '-- prompt CRUD/search API
+  |-- prompt CRUD/search API
+  '-- workflow-link CRUD/search API
           |
           '-- SQLAlchemy/Alembic -----> SQLite
 ~~~
@@ -51,6 +59,11 @@ Expected Ollama failures are dashboard state, not application crashes. Tests rep
 Prompt list requests return summaries rather than full content. Search, exact tag filtering, counting,
 and pagination happen in the backend; create and update responses return the canonical values stored by
 the server.
+
+Workflow-link list requests likewise return summaries, but each summary includes the complete saved
+URL so the directory can show its validated origin. The backend never dereferences that URL. Create,
+retrieve, and replace responses return the full record, including description; deleting a record
+removes only the Hub bookmark and never changes its destination.
 
 ## Prerequisites
 
@@ -92,7 +105,7 @@ docker compose down --volumes
 At startup, the API applies migrations and synchronizes its uv environment, while the web service
 synchronizes the frozen pnpm lock into named dependency volumes before starting Vite. A first start or
 lockfile change may need package-registry access. Normal `docker compose down` retains both
-dependencies and prompt data; do not use `--volumes` merely to refresh packages because it also
+dependencies and registry data; do not use `--volumes` merely to refresh packages because it also
 deletes the SQLite volume.
 
 The Compose default points the API at host.docker.internal for Ollama and includes the Linux host-gateway mapping. Ollama must also accept connections from the Docker bridge. Its usual localhost-only binding may not do so. Reconfiguring Ollama to listen on another interface can increase network exposure; apply host firewall rules and never expose it publicly without protection.
@@ -155,6 +168,11 @@ OLLAMA_BASE_URL accepts only a credential-free HTTP or HTTPS origin with a host 
 | GET | /api/prompts/{prompt_id} | Retrieve one prompt with full raw-text content. |
 | PUT | /api/prompts/{prompt_id} | Replace all editable fields and return canonical server values. |
 | DELETE | /api/prompts/{prompt_id} | Permanently delete one prompt and return HTTP 204. |
+| GET | /api/workflow-links | Server-filtered workflow-link summaries. Supports `q`, `tag`, `limit`, and `offset`. |
+| POST | /api/workflow-links | Create one workflow link and return its canonical full representation. |
+| GET | /api/workflow-links/{workflow_link_id} | Retrieve one workflow link with its full raw-text description. |
+| PUT | /api/workflow-links/{workflow_link_id} | Replace all editable fields and return canonical server values. |
+| DELETE | /api/workflow-links/{workflow_link_id} | Permanently delete one stored reference and return HTTP 204. |
 
 Ollama being offline is an expected HTTP 200 response:
 
@@ -172,6 +190,24 @@ Prompt titles are trimmed and prompt content remains raw text. Tags are whitespa
 case-folded, deduplicated canonical values; commas and control characters are rejected. A list search
 matches title, content, and tags on the server. An exact tag filter can be combined with search, and
 missing individual prompts return HTTP 404.
+
+Workflow-link titles and descriptions are trimmed. URLs must be absolute HTTP(S) references with a
+valid ASCII hostname, canonical IPv4 address, or bracketed IPv6 address and a valid port. Localhost
+and private-network destinations are allowed for homelab use. User information, non-HTTP schemes,
+Unicode host spelling, whitespace/control characters, backslashes, malformed authorities and ports,
+and ambiguous noncanonical numeric hosts are rejected. Query strings and fragments are allowed and
+preserved, but are not inspected for credentials or signed tokens.
+
+Workflow-link tags use the same canonical 10-tag/30-character contract as Prompt tags. List search
+matches title, complete URL, description, and tags; an exact canonical tag can be combined with
+search. Duplicate titles and destinations are valid.
+
+> [!IMPORTANT]
+> Rendering, selecting, searching, editing, saving, copying, or deleting a workflow link does not
+> contact its destination. **Open saved link** is the only destination navigation: it appears only
+> for a persisted URL that passes the browser safety check and opens after an explicit click in a
+> new tab with `noopener`, `noreferrer`, and a no-referrer policy. Copy likewise uses only the exact
+> last-saved URL. Treat the full URL as sensitive if its query or fragment contains a token.
 
 ## Common commands
 
@@ -192,7 +228,7 @@ missing individual prompts return HTTP 404.
 
 ## Validation
 
-Phase 1A currently verifies:
+The Phase 1B implementation currently verifies:
 
 - exact health and Ollama HTTP contracts;
 - connection, HTTP, invalid JSON, invalid URL, and credential-reflection failures;
@@ -202,9 +238,24 @@ Phase 1A currently verifies:
 - runtime validation of prompt list/detail responses at the browser boundary;
 - prompt-registry loading, filtering, editing, keyboard save, dirty navigation guards, clipboard feedback,
   mobile navigation, and confirmed deletion behavior;
+- WorkflowLink persistence and reversible additive migration 0002 without changing the Prompt table;
+- all five workflow-link routes, safe fixed errors, response validation, search, exact tags,
+  pagination, complete replacement, and repeated-delete 404 behavior;
+- accepted/rejected URL cases through a shared Python/TypeScript corpus and browser-gated response
+  validation;
+- workflow-link loading, filtering, editing, keyboard save, pending and dirty navigation guards,
+  persisted-only Open/Copy, deletion, focus, clipboard, request-cancellation, and stale-completion
+  behavior;
+- a real Firefox loopback sentinel flow proving no stored destination is requested before explicit
+  Open, followed by exactly one new tab/request with no Referer;
 - Alembic upgrade, drift check, and downgrade;
 - Ruff, strict mypy, ESLint, Vitest, TypeScript, and Vite production build;
-- Compose image build, migration startup, direct/proxied health, offline Ollama, and graceful shutdown.
+- an isolated Phase 1B Compose image build, migration startup, direct/proxied health and graceful
+  offline Ollama state, workflow-link CRUD/search/delete, zero destination dereferences, dependency
+  store isolation, and complete acceptance-project teardown.
+
+The final repeat Phase 1B acceptance from the exact committed candidate—including artifact and
+clean-Git audits—is still pending.
 
 ## Security posture
 
@@ -216,14 +267,22 @@ Phase 1A currently verifies:
 - Real .env files, local databases, dependency directories, and common secret-file formats are ignored.
 - Prompt list, detail, create, update, delete, and clipboard actions can expose or change sensitive local
   prompt data to any client that can reach the unauthenticated app.
+- Workflow-link list/detail/write responses expose complete saved URLs, descriptions, tags, and
+  timestamps to any client that can reach the unauthenticated app. Queries and fragments may contain
+  sensitive local data even though URL user information is rejected.
+- The Hub does not check destination health, fetch metadata, proxy, redirect, authenticate to n8n,
+  or call a stored workflow URL. Open and Copy require explicit browser clicks and use persisted
+  state only.
 
 Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure or integration scope.
 
 ## Current limitations
 
 - Prompt version history, archive/restore, soft deletion, and secure deletion are not implemented.
-- Hard-deleted prompts cannot be restored by the app; portable import/export is deferred to Phase 1C.
-- Workflow links are deferred to Phase 1B.
+- Hard-deleted prompts and workflow links cannot be restored by the app; portable import/export is
+  deferred to Phase 1C.
+- Workflow links are generic references only. Provider discovery, n8n IDs/API calls, reachability,
+  execution state, synchronization, previews, and remote mutation are not implemented.
 - Ollama integration is observation-only; there is no run, pull, or delete action.
 - n8n and container observability are not implemented.
 - No authentication, multi-user support, production proxy, or public deployment profile exists.
@@ -233,8 +292,8 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 ## Roadmap to production-ready v1
 
 1. **Phase 0 — Observable MVP (complete):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
-2. **Phase 1A — Prompt Registry (complete/current):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
-3. **Phase 1B — Workflow Links (next):** separately designed local workflow references and navigation.
+2. **Phase 1A — Prompt Registry (complete):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
+3. **Phase 1B — Workflow Links (implementation complete; final acceptance in progress):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
 4. **Phase 1C — Import/Export:** separately designed portable local prompt and workflow data.
 5. **Phase 2 — Read-only integrations:** explicitly approved n8n and service/container visibility through constrained interfaces.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
@@ -253,6 +312,8 @@ The project should be useful on a private localhost setup during Phases 1–2. S
 - [Phase 0 implementation plan](docs/superpowers/plans/2026-07-10-phase-0-mvp.md)
 - [Approved Phase 1A Prompt Registry design](docs/superpowers/specs/2026-07-10-phase-1a-prompt-registry-design.md)
 - [Phase 1A Prompt Registry implementation plan](docs/superpowers/plans/2026-07-10-phase-1a-prompt-registry.md)
+- [Approved Phase 1B Workflow Links design](docs/superpowers/specs/2026-07-12-phase-1b-workflow-links-design.md)
+- [Phase 1B Workflow Links implementation plan](docs/superpowers/plans/2026-07-12-phase-1b-workflow-links.md)
 
 ## License
 

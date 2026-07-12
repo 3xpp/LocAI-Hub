@@ -166,3 +166,52 @@ would weaken the project's rule that application tooling must not open local sec
 
 **Consequence:** Vite and Vitest do not load `.env*` files. Docker Compose retains its separately
 documented standard environment-file behavior, and acceptance commands select `/dev/null` explicitly.
+
+## 2026-07-12 — Dedicated WorkflowLink reference domain and additive migration
+
+**Decision:** Store workflow references in a dedicated `workflow_links` table and expose them under
+`/api/workflow-links`. Use the explicitly approved additive `0002_create_workflow_links` migration;
+leave the existing Prompt mapping and `0001_create_prompts` revision unchanged.
+
+**Why:** A browser bookmark with local context is not a Prompt and is not a remotely managed
+workflow. A separate domain keeps validation, search, future export records, and provider
+integrations reviewable without overloading either the Prompt table or a premature generic-resource
+abstraction.
+
+**Consequence:** WorkflowLink contains id, title, URL, description, plain-text canonical tags, and
+UTC-aware created/updated timestamps. The five-route API supports complete CRUD, server search,
+exact tag filtering, deterministic pagination, duplicates, and permanent single-record deletion.
+Migration tests prove Prompt data survives upgrade and downgrade between revisions 0001 and 0002.
+
+## 2026-07-12 — Reference-only URL profile and explicit destination navigation
+
+**Decision:** Accept only absolute HTTP(S) workflow URLs with a valid ASCII DNS/punycode host,
+canonical IPv4 address, or bracketed IPv6 address and valid optional port. Reject user information,
+unsafe schemes, Unicode host spelling, whitespace/control characters, backslashes, malformed
+authorities and ports, and ambiguous noncanonical numeric hosts. Preserve allowed paths, query
+strings, and fragments without inspecting or dereferencing them.
+
+**Why:** Homelab references need localhost, private addresses, deep paths, and provider-specific
+queries, but turning stored input into a backend request, redirect, preview, or implicit browser
+navigation would cross a materially different security boundary.
+
+**Consequence:** List and detail responses expose the complete URL to any client that can reach the
+unauthenticated local API, so query strings and fragments must be treated as potentially sensitive.
+Rendering, selection, search, editing, save, copy, and deletion never request a destination. A persisted URL
+becomes an Open anchor only after backend and browser validation; it requires an explicit click and
+uses a new tab with `noopener noreferrer` and `referrerPolicy="no-referrer"`. Copy likewise uses only
+the exact persisted URL, never a dirty draft.
+
+## 2026-07-12 — Flexible canonical tags and provider integration deferral
+
+**Decision:** Reuse the canonical tag contract for Workflow Links and do not add provider/category
+columns, n8n identifiers, remote status, credentials, synchronization state, or SDK/API calls.
+
+**Why:** Tags such as `n8n`, `grafana`, `repository`, or `docs` organize a mixed local directory
+without making the schema provider-specific or implying that the Hub can inspect or control a
+destination.
+
+**Consequence:** Workflow links allow at most 10 canonical tags of at most 30 Unicode characters,
+stored through the shared plain-text codec and filtered exactly. Provider-aware discovery and
+read-only n8n/service visibility remain separately approved Phase 2 work; remote workflow mutation
+requires a later authentication, authorization, audit, and threat-model design.

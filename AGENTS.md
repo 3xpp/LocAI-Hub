@@ -14,7 +14,7 @@ Local AI Workflow Hub is a local-first dashboard for observing a developer's loc
 
 - Run backend tests before committing backend changes.
 - Run frontend typecheck before committing frontend changes.
-- Run `make test-web` before committing prompt UI behavior changes.
+- Run `make test-web` before committing Prompt or Workflow Links UI behavior changes.
 - Run the relevant lint commands for every changed domain.
 - Update history/BUILD_LOG.md in every implementation milestone.
 - Record only failures actually observed in docs/FAILURES.md; never invent incidents.

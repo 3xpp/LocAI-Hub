@@ -1,18 +1,25 @@
 # Security Notes
 
-## Phase 1A security posture
+## Phase 1B security posture
 
-Local AI Workflow Hub is an unauthenticated, local development dashboard. Phase 1A is designed for one trusted operator on one machine. It is not a public service, remote administration plane, or production deployment profile. The Prompt Registry adds local data read, create, update, copy, and permanent-delete capabilities; that increases the impact of unintended network access.
+Local AI Workflow Hub is an unauthenticated, local development dashboard. Phase 1B is designed for
+one trusted operator on one machine. It is not a public service, remote administration plane, or
+production deployment profile. The Prompt and Workflow Links registries add local data read,
+create, update, copy/open, and permanent-delete capabilities; that increases the impact of
+unintended network access.
 
 > Do not expose the dashboard or API publicly without authentication, authorization, TLS, network policy, audit logging, and a dedicated threat model.
 
 Loopback host bindings reduce accidental exposure; they are not a substitute for the missing controls.
 
-## Explicit Phase 1A boundaries
+## Explicit Phase 1B boundaries
 
 - **No Docker socket access:** Neither the application nor Compose mounts /var/run/docker.sock. There is no Docker SDK or container-control API.
-- **No n8n API key usage:** Phase 1A does not read N8N_API_KEY, call n8n, or mutate n8n workflows.
-- **No service-administration actions:** There are no container restart buttons, arbitrary scripts, shell execution, Ollama pull/delete controls, or workflow mutation. Prompt CRUD is limited to the Hub's local SQLite registry.
+- **No n8n API key usage:** Phase 1B does not read N8N_API_KEY, call n8n, discover remote workflows,
+  or mutate n8n workflows. An `n8n` tag is only operator-authored text.
+- **No service-administration actions:** There are no container restart buttons, arbitrary scripts,
+  shell execution, Ollama pull/delete controls, or remote workflow mutation. Prompt and Workflow
+  Link CRUD are limited to the Hub's local SQLite registry.
 - **No cloud AI integration:** The application does not use OpenAI or another hosted model provider.
 - **No authentication:** This is why public or untrusted network exposure is prohibited.
 
@@ -27,6 +34,9 @@ Adding any of these capabilities requires explicit approval and separate authent
 - Docker Compose may load .env through normal Compose behavior. Treat rendered Compose configuration and container inspection as potentially sensitive when environment values exist.
 - The committed .env.example contains safe local examples only.
 - Do not put credentials in OLLAMA_BASE_URL. The client rejects user information, query strings, fragments, and non-root URL paths.
+- Do not put credentials, signed tokens, or other secrets in a saved workflow URL. Workflow-link
+  user information is rejected, but allowed query strings and fragments are deliberately preserved
+  and are not inspected for secrets.
 - Do not log complete environment variables, database URLs, headers, raw transport exceptions, or upstream response bodies.
 
 Common real-secret files, local databases, dependency directories, and generated output are excluded by .gitignore and Docker build contexts. Ignore rules are defense in depth, not permission to inspect secret files.
@@ -80,6 +90,38 @@ restore. SQLite pages, filesystem snapshots, volume backups, and clipboard histo
 hard delete is not a secure-erasure guarantee. Local-first storage does not automatically provide
 encryption, backups, retention controls, or secure deletion. Portable import/export is deferred to Phase
 1C, and operational recovery controls belong to later phases.
+
+## Workflow Links data exposure and destination isolation
+
+Workflow links may point to localhost, private-network services, repository pages, dashboards,
+documentation, or provider UIs. The complete saved URL can itself be sensitive:
+
+- list responses expose title, complete URL, bounded description preview, tags, and timestamps;
+- single-item, create, and update responses expose the complete URL and raw-text description;
+- allowed query strings and fragments may contain opaque tokens, signed parameters, record IDs, or
+  other private context even though URL user information is rejected;
+- any client that can reach the unauthenticated API can create, replace, or permanently delete
+  stored references;
+- Copy writes the exact persisted URL to the browser/operating-system clipboard only after an
+  explicit click. Clipboard history, synchronization, and other local software remain outside the
+  Hub's control.
+
+Saving a link is not a connectivity test or integration. The application has no destination HTTP
+client, redirect endpoint, proxy endpoint, metadata scraper, favicon request, iframe, prefetch,
+provider SDK, or `window.open` call. Rendering, listing, selecting, searching, editing, saving,
+copying, and deleting a record do not contact its target.
+
+**Open saved link** is an explicit browser anchor shown only for a persisted URL that passes the
+runtime browser safety check. It uses a new tab, `rel="noopener noreferrer"`, and
+`referrerPolicy="no-referrer"`. The action can still navigate to a dangerous or compromised site;
+validation establishes URL syntax and browser handling, not destination trust, ownership,
+availability, or content safety. Operators must inspect destinations and protect the services they
+open.
+
+Workflow-link deletion removes only the local SQLite reference. It does not contact or delete the
+remote/local destination and has no application-level undo. As with prompts, database pages,
+filesystem snapshots, backups, browser history, and clipboard history may retain copies; hard
+delete is not secure erasure.
 
 ## Dependency and build safety
 

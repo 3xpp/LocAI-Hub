@@ -1292,3 +1292,61 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add workflow link editor and safe navigation`
+
+## 2026-07-12 — Phase 1B integration documentation and regression gates
+
+**Status:** Complete; final Phase 1B acceptance pending
+
+### Documentation updates
+
+- Updated the README to describe the implemented Workflow Links registry, all five routes,
+  server-side search and exact tags, URL validation profile, persisted-only Open/Copy behavior,
+  no-dereference guarantee, full-URL sensitivity, current limitations, validation commands, and
+  final-acceptance status.
+- Added architecture decisions for the dedicated WorkflowLink domain, explicitly approved additive
+  0002 migration, reference-only URL boundary, flexible canonical tags, and provider/n8n deferral.
+- Expanded security notes for unauthenticated full-URL/description exposure, sensitive query or
+  fragment data, explicit new-tab navigation, clipboard behavior, destination isolation, and the
+  absence of n8n/provider calls.
+- Updated AGENTS.md so Prompt or Workflow Links UI behavior commits must run `make test-web`, and
+  marked the approved Phase 1B design implementation-complete with final acceptance pending.
+
+### Non-Docker verification
+
+- Literal `make install` passed: uv resolved 58 packages and audited 56; pnpm reported the lockfile
+  up to date. The only notices were the known ignored esbuild build-script notice and a pnpm update
+  notice; both committed locks remained unchanged.
+- `make test` passed all 338 backend tests with the one already documented Starlette TestClient
+  deprecation warning. `make test-e2e` passed all 136 end-to-end tests with the same single warning.
+- `make test-web` passed all 213 frontend tests across 13 files. Root lint passed Ruff and ESLint;
+  root typecheck passed strict mypy across 28 backend source files and TypeScript project references.
+- Ruff formatting verification passed all 44 backend Python files. The Vite production build
+  transformed 49 modules and produced a 261.53 kB JavaScript bundle (77.37 kB gzip) and 38.93 kB
+  CSS bundle (7.77 kB gzip).
+- A disposable SQLite database upgraded to Alembic head 0002, `alembic check` reported no drift,
+  downgrade to `0001_create_prompts` succeeded, and re-upgrade to head succeeded. The disposable
+  database and sidecars were removed; the automated migration test remains the prompt-preservation
+  proof.
+
+### Isolated Compose verification
+
+- The isolated `local-ai-workflow-hub-phase1b-acceptance` project built and started successfully
+  with explicit safe configuration and `/dev/null` as its environment file. Compose emitted only
+  the already documented Bake/buildx fallback warning.
+- Direct and proxied health returned HTTP 200. Direct and proxied Ollama status returned the expected
+  graceful offline HTTP 200 state for the safe unreachable `127.0.0.1:9` origin.
+- The workflow-link lifecycle passed direct create 201, proxied detail 200, direct and proxied
+  combined query-plus-exact-tag results with total 1, proxied complete PUT 200, direct DELETE 204,
+  and proxied repeated DELETE 404. The bridge-owned destination sentinel recorded zero requests.
+- The container pnpm store existed at `/pnpm/store/v10`; neither `/app/.pnpm-store` nor source-tree
+  `web/.pnpm-store` existed.
+- `down --volumes --remove-orphans` removed every acceptance container, network, and all four
+  acceptance volumes. The acceptance `ps` and volume lists were empty afterward, while the four
+  preexisting main-project volumes remained unchanged.
+- No new Task 7 incident required a `docs/FAILURES.md` entry. No dependency lock, runtime code,
+  schema, migration, secret, environment file, Docker capability, n8n integration, authentication,
+  deployment, or production configuration changed in this documentation milestone.
+
+### Commit
+
+- `chore: finalize phase 1b integration`
