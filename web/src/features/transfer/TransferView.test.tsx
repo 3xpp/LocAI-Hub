@@ -1,4 +1,5 @@
-import { act, render, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,6 +12,7 @@ import {
   type TransferImportResponse,
   type TransferPreviewResponse,
 } from '../../api/transfer'
+import { TransferView } from './TransferView'
 import { useTransfer, type TransferController } from './useTransfer'
 
 vi.mock('../../api/transfer', async (importOriginal) => {
@@ -105,6 +107,19 @@ let latestController: TransferController | null = null
 function HookHarness({ enabled }: { enabled: boolean }) {
   latestController = useTransfer(enabled)
   return null
+}
+
+function TransferHarness() {
+  return <TransferView controller={useTransfer(true)} />
+}
+
+function browserFile(raw = rawBundle, filename = 'bundle.json'): File {
+  const bytes = new TextEncoder().encode(raw)
+  const file = new File([bytes], filename, { type: 'application/json' })
+  Object.defineProperty(file, 'arrayBuffer', {
+    value: vi.fn().mockResolvedValue(bytes.buffer),
+  })
+  return file
 }
 
 const controller = () => {
@@ -396,5 +411,231 @@ describe('transfer controller', () => {
     await waitFor(() => expect(previewMock).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(controller().canImport).toBe(true))
     expect(importMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('transfer interface', () => {
+  const createObjectURL = vi.fn(() => 'blob:transfer-interface-test')
+  const revokeObjectURL = vi.fn()
+
+  beforeEach(() => {
+    latestController = null
+    exportMock.mockReset().mockResolvedValue(exportResult)
+    previewMock.mockReset().mockResolvedValue(readyPreview())
+    importMock.mockReset().mockResolvedValue(importResult)
+    createObjectURL.mockClear()
+    revokeObjectURL.mockClear()
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('renders explicit sensitive-data boundaries and makes no request on entry', () => {
+    render(<TransferHarness />)
+
+    expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+    expect(screen.getByText(/sensitive prompt text/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/query strings and fragments/i)).toHaveLength(2)
+    const download = screen.getByRole('button', { name: 'Download JSON bundle' })
+    const input = screen.getByLabelText('Select JSON bundle')
+    expect(download).toHaveAccessibleDescription()
+    expect(input).toHaveAccessibleDescription()
+    expect(exportMock).not.toHaveBeenCalled()
+    expect(previewMock).not.toHaveBeenCalled()
+    expect(importMock).not.toHaveBeenCalled()
+  })
+
+  it('does not export until the explicit action and focuses its safe result', async () => {
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+
+    expect(exportMock).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Download JSON bundle' }))
+
+    expect(exportMock).toHaveBeenCalledTimes(1)
+    const result = await screen.findByRole('status', { name: 'Export complete' })
+    expect(result).toHaveTextContent('2 records')
+    await waitFor(() => expect(result).toHaveFocus())
+  })
+
+  it('resets the file input, supports same-file reselection, and can clear metadata', async () => {
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+    const input = screen.getByLabelText('Select JSON bundle') as HTMLInputElement
+    const file = browserFile(rawBundle, 'portable-bundle-with-a-long-name.json')
+
+    await user.upload(input, file)
+    expect(await screen.findByText(file.name)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(String(file.size) + ' bytes'))).toBeInTheDocument()
+    expect(input.value).toBe('')
+    expect(previewMock).toHaveBeenCalledTimes(1)
+
+    await user.upload(input, file)
+    await waitFor(() => expect(previewMock).toHaveBeenCalledTimes(2))
+    expect(input.value).toBe('')
+
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+    expect(screen.queryByText(file.name)).not.toBeInTheDocument()
+  })
+
+  it('shows duplicate counts and confirms append-only behavior without skip controls', async () => {
+    previewMock.mockResolvedValueOnce(readyPreview(1))
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+
+    await user.upload(screen.getByLabelText('Select JSON bundle'), browserFile())
+    expect(await screen.findByText('1 exact duplicate')).toBeInTheDocument()
+    const importButton = screen.getByRole('button', { name: 'Import records' })
+    expect(importButton).toHaveAccessibleDescription()
+    await user.click(importButton)
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent('append-only')
+    expect(dialog).toHaveTextContent('2 records')
+    expect(dialog).toHaveTextContent('1 Prompt')
+    expect(dialog).toHaveTextContent('1 Workflow Link')
+    expect(dialog).toHaveTextContent('1 exact duplicate')
+    expect(screen.queryByRole('button', { name: /skip/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(importButton).toHaveFocus())
+    await user.click(importButton)
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
+    await waitFor(() => expect(importButton).toHaveFocus())
+  })
+
+  it('renders only bounded safe issues and never bundle record values', async () => {
+    const privateMarker = 'private-content-and-url-marker'
+    previewMock.mockRejectedValueOnce(
+      new TransferHttpError(422, {
+        code: 'invalid_bundle',
+        message: 'Bundle validation failed.',
+        issues: [
+          {
+            location: ['records', 0, 'prompt', 'content'],
+            record_index: 0,
+            record_type: 'prompt',
+            field: 'content',
+            code: 'invalid_value',
+            message: 'Field value is invalid.',
+          },
+        ],
+        issues_truncated: false,
+      }),
+    )
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+
+    const privateJson =
+      '{"content":"' + privateMarker + '","url":"http://' + privateMarker + '.test"}'
+    await user.upload(
+      screen.getByLabelText('Select JSON bundle'),
+      browserFile(privateJson),
+    )
+
+    const alert = await screen.findByRole('alert', { name: 'Import preview failed' })
+    expect(alert).toHaveTextContent('Bundle validation failed.')
+    expect(alert).toHaveTextContent('Record 1')
+    expect(alert).toHaveTextContent('content')
+    expect(alert).toHaveTextContent('Field value is invalid.')
+    expect(screen.queryByText(new RegExp(privateMarker))).not.toBeInTheDocument()
+  })
+
+  it('keeps an empty valid bundle selected but unavailable for import', async () => {
+    previewMock.mockResolvedValueOnce(emptyPreview)
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+
+    await user.upload(screen.getByLabelText('Select JSON bundle'), browserFile())
+
+    expect(await screen.findByText('No records to import')).toBeInTheDocument()
+    expect(screen.getByText(/cannot be imported/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import records' })).toBeDisabled()
+  })
+
+  it('locks release controls while importing and focuses the committed result afterward', async () => {
+    const request = deferred<TransferImportResponse>()
+    importMock.mockReturnValueOnce(request.promise)
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+    await user.upload(screen.getByLabelText('Select JSON bundle'), browserFile())
+    await screen.findByRole('button', { name: 'Import records' })
+
+    await user.click(screen.getByRole('button', { name: 'Import records' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm append-only import' }))
+
+    expect(screen.getByRole('status', { name: 'Import pending' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Select JSON bundle')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Clear selection' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+    act(() => request.resolve(importResult))
+
+    const result = await screen.findByRole('status', { name: 'Import complete' })
+    expect(result).toHaveTextContent('Imported 2 records')
+    expect(result).toHaveTextContent('1 Prompt')
+    expect(result).toHaveTextContent('1 Workflow Link')
+    await waitFor(() => expect(result).toHaveFocus())
+    expect(screen.queryByText('bundle.json')).not.toBeInTheDocument()
+  })
+
+  it('focuses an uncertain failure and requires an explicit preview before another import', async () => {
+    importMock.mockRejectedValueOnce(new TransferHttpError(201, null, true))
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+    await user.upload(screen.getByLabelText('Select JSON bundle'), browserFile())
+    await screen.findByRole('button', { name: 'Import records' })
+    await user.click(screen.getByRole('button', { name: 'Import records' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm append-only import' }))
+
+    const alert = await screen.findByRole('alert', { name: 'Import failed' })
+    expect(alert).toHaveTextContent(/outcome is uncertain/i)
+    await waitFor(() => expect(alert).toHaveFocus())
+    expect(screen.getByRole('button', { name: 'Import records' })).toBeDisabled()
+    expect(importMock).toHaveBeenCalledTimes(1)
+
+    await user.click(screen.getByRole('button', { name: 'Preview again' }))
+    await waitFor(() => expect(previewMock).toHaveBeenCalledTimes(2))
+    expect(await screen.findByRole('button', { name: 'Import records' })).toBeEnabled()
+    expect(importMock).toHaveBeenCalledTimes(1)
+  })
+
+
+  it('shows a definite server rejection and invalidates the prepared preview', async () => {
+    importMock.mockRejectedValueOnce(
+      new TransferHttpError(422, {
+        code: 'invalid_bundle',
+        message: 'Bundle validation failed.',
+        issues: [],
+        issues_truncated: false,
+      }),
+    )
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+    await user.upload(screen.getByLabelText('Select JSON bundle'), browserFile())
+    await screen.findByRole('button', { name: 'Import records' })
+    await user.click(screen.getByRole('button', { name: 'Import records' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm append-only import' }))
+
+    const alert = await screen.findByRole('alert', { name: 'Import failed' })
+    expect(alert).toHaveTextContent('Bundle validation failed.')
+    expect(alert).not.toHaveTextContent(/uncertain/i)
+    expect(screen.getByRole('button', { name: 'Import records' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Preview again' })).toBeEnabled()
+  })
+  it('focuses fixed export failures without reflecting private exception text', async () => {
+    exportMock.mockRejectedValueOnce(new Error('private-export-marker'))
+    const user = userEvent.setup()
+    render(<TransferHarness />)
+
+    await user.click(screen.getByRole('button', { name: 'Download JSON bundle' }))
+
+    const alert = await screen.findByRole('alert', { name: 'Export failed' })
+    expect(alert).toHaveTextContent('Export failed.')
+    expect(alert).not.toHaveTextContent('private-export-marker')
+    await waitFor(() => expect(alert).toHaveFocus())
   })
 })

@@ -1676,3 +1676,45 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add transfer workflow controller`
+
+## 2026-07-18 — Safe Phase 1C import/export interface
+
+### Milestone
+
+- Used the frontend-design guidance to extend the existing industrial control-room language with a
+  distinct portable-data airlock: explicit local-boundary telemetry, inbound/outbound panels, and
+  restrained high-contrast safety cues without a component library or new asset.
+- Added a Transfer header, explicit export panel, memory-only local-file intake panel, bounded
+  preview manifest, append-only confirmation dialog, safe announcements, and Phase 01C footer.
+- Added prominent export and import warnings for sensitive Prompt text, descriptions, internal
+  hosts, query strings, and fragments, with accessible descriptions on the activating controls.
+- Kept export and file preview fully operator-triggered; entering the view starts no request, and
+  the file input resets immediately so the same local bundle can be selected again.
+- Rendered only filename, byte size, type/total/duplicate counts, fixed warnings, and bounded safe
+  issue metadata; raw Prompt content, descriptions, complete URLs, and selected JSON never become
+  component props or rendered text.
+- Added valid-empty, duplicate, preview rejection, definite import rejection, uncertain outcome,
+  pending, success, and export-failure presentations with live regions and fixed copy.
+- Reused the shared confirmation dialog for an explicit one-transaction append-only explanation;
+  every valid record and exact duplicate is imported, with no merge, replace, or skip control.
+- Disabled replacement, clear, preview, export, and import actions while work is pending and exposed
+  no cancellation action after import confirmation.
+- Added dialog Cancel/native Escape focus restoration and deferred focus handoff to committed
+  results or fixed alerts after the dialog closes.
+- Kept App navigation, global styling, dependencies, lockfiles, backend, schema, Docker, and
+  deployment behavior unchanged for this component-only milestone.
+
+### Verification
+
+- Captured the expected module-resolution failure before `TransferView` existed.
+- `pnpm exec vitest run src/features/transfer/TransferView.test.tsx` passed all 23 controller and
+  accessible interface tests.
+- Required `make test-web` passed all 281 frontend tests across 16 files.
+- `pnpm lint` and `pnpm typecheck` passed.
+- Confirmed the UI never renders a private marker placed in selected Prompt/URL-shaped JSON and
+  mocked API calls remain limited to explicit local transfer actions.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add safe import export interface`
