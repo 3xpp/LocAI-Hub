@@ -1677,6 +1677,44 @@ This journal records what is built, why it changes, and how each milestone is ve
 
 - `feat: add transfer workflow controller`
 
+## 2026-07-18 — Four-view Phase 1C dashboard integration
+
+### Milestone
+
+- Added Transfer as the fourth masthead destination alongside Overview, Prompts, and Workflows,
+  with an accessible active-page marker and no network request when the view is first opened.
+- Integrated the memory-only transfer controller at the application boundary and preserved each
+  registry's existing enter-view refresh behavior after a successful append-only import.
+- Extended navigation guards so dirty Prompt and Workflow Link edits still require confirmation,
+  a prepared non-empty import requires explicit discard confirmation, and every pending transfer
+  operation blocks navigation without presenting a misleading cancellation path.
+- Allowed valid-empty and rejected previews to be left without confirmation because they cannot be
+  imported, while keeping selected raw JSON out of application navigation state.
+- Updated the dashboard phase marker from Phase 00 to Phase 01.
+- Used the frontend-design guidance to give Transfer a restrained amber local-data airlock within
+  the existing industrial control-room visual language, without a component library or new asset.
+- Added a bounded two-panel layout that stacks below 880px, a four-column mobile masthead below
+  600px, 44px touch targets, visible focus states, reduced-motion support, and safe wrapping for
+  long filenames, statuses, and validation issues down to a 320px viewport.
+- Kept dependencies, lockfiles, backend behavior, database schema, Docker configuration, and
+  deployment behavior unchanged.
+
+### Verification
+
+- Captured the expected navigation test failure before the Transfer masthead control existed.
+- `make test-web` passed all 292 frontend tests across 16 files.
+- `pnpm lint`, `pnpm typecheck`, and the Vite production build passed; the build transformed 56
+  modules and emitted bounded local CSS and JavaScript assets.
+- Verified entering Transfer performs no export, preview, or import request and successful import
+  causes fresh Prompt and Workflow Link list requests on their next entry.
+- Verified dirty-editor confirmation, prepared-import confirmation, pending-operation navigation
+  locks, and the absence of an import cancellation control at the application navigation boundary.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: integrate transfer dashboard view`
+
 ## 2026-07-18 — Safe Phase 1C import/export interface
 
 ### Milestone

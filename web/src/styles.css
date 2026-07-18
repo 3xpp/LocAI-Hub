@@ -2035,6 +2035,593 @@ h2 {
   outline-offset: 3px;
 }
 
+.transfer-view {
+  --transfer-accent: var(--pending);
+  --transfer-accent-soft: color-mix(in srgb, var(--pending) 14%, transparent);
+  min-width: 0;
+}
+
+.transfer-header .kicker,
+.transfer-panel .eyebrow {
+  color: var(--transfer-accent);
+}
+
+.transfer-header h1 {
+  text-wrap: balance;
+}
+
+.transfer-boundary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 18px;
+  border-block: 1px solid color-mix(in srgb, var(--transfer-accent) 48%, var(--line));
+  padding: 12px 14px;
+  color: var(--muted-high);
+  background:
+    linear-gradient(90deg, var(--transfer-accent-soft), transparent 34%),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--transfer-accent) 3%, transparent) 9px 10px
+    );
+  box-shadow: inset 3px 0 0 var(--transfer-accent);
+}
+
+.transfer-boundary > span {
+  color: var(--transfer-accent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.transfer-boundary > span:last-child {
+  color: var(--muted-aa);
+}
+
+.transfer-boundary p {
+  min-width: 0;
+  margin: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.035em;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.transfer-panel {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-top-color: color-mix(in srgb, var(--transfer-accent) 72%, var(--line));
+  padding: clamp(25px, 3.5vw, 38px);
+  background:
+    linear-gradient(145deg, var(--transfer-accent-soft), transparent 12rem),
+    color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--transfer-accent) 55%, transparent),
+    0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.transfer-panel > * {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.transfer-panel__index {
+  position: absolute;
+  z-index: 0;
+  top: 14px;
+  right: 17px;
+  color: color-mix(in srgb, var(--transfer-accent) 10%, transparent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: clamp(3.6rem, 7vw, 6.8rem);
+  font-weight: 700;
+  letter-spacing: -0.08em;
+  line-height: 0.8;
+  pointer-events: none;
+}
+
+.transfer-panel h2 {
+  max-width: 12ch;
+  margin-bottom: 17px;
+  font-size: clamp(2.15rem, 4vw, 3.45rem);
+  text-wrap: balance;
+}
+
+.transfer-panel__copy {
+  max-width: 58ch;
+  margin-bottom: 24px;
+  color: var(--muted-high);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-size: 0.91rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.transfer-warning,
+.transfer-status,
+.transfer-result,
+.transfer-alert {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.transfer-warning {
+  margin: 0 0 20px;
+  border-left: 3px solid var(--transfer-accent);
+  padding: 12px 14px;
+  color: #e6d39d;
+  background: color-mix(in srgb, var(--transfer-accent) 7%, transparent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.65rem;
+  line-height: 1.65;
+}
+
+.transfer-warning strong {
+  color: var(--transfer-accent);
+}
+
+.transfer-warning--sensitive {
+  border-block: 1px solid color-mix(in srgb, var(--transfer-accent) 24%, var(--line-soft));
+  border-right: 1px solid color-mix(in srgb, var(--transfer-accent) 24%, var(--line-soft));
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--transfer-accent) 7%, transparent) 0 8px,
+      transparent 8px 16px
+    );
+}
+
+.transfer-warning--duplicate {
+  margin-top: 14px;
+}
+
+.transfer-action {
+  display: inline-flex;
+  min-height: 44px;
+  max-width: 100%;
+  justify-content: center;
+  gap: 18px;
+  align-items: center;
+  border-radius: 0;
+  padding: 12px 15px;
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.transfer-action--primary {
+  justify-content: space-between;
+  border: 1px solid var(--transfer-accent);
+  color: #19160c;
+  background: var(--transfer-accent);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--transfer-accent) 16%, transparent);
+}
+
+.transfer-action--secondary {
+  border: 1px solid color-mix(in srgb, var(--transfer-accent) 48%, var(--line));
+  color: var(--transfer-accent);
+  background: color-mix(in srgb, var(--transfer-accent) 4%, var(--surface));
+}
+
+.transfer-action:hover:not(:disabled) {
+  border-color: var(--signal-bright);
+  color: #10150e;
+  background: var(--signal-bright);
+  transform: translateY(-2px);
+}
+
+.transfer-action:disabled,
+.transfer-file-control input:disabled {
+  cursor: wait;
+  filter: saturate(0.45);
+  opacity: 0.56;
+}
+
+.transfer-action:focus-visible,
+.transfer-file-control input:focus-visible {
+  outline: 3px solid var(--transfer-accent);
+  outline-offset: 4px;
+}
+
+.transfer-file-control {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  margin-bottom: 16px;
+  border: 1px dashed color-mix(in srgb, var(--transfer-accent) 56%, var(--line));
+  padding: 16px;
+  background: rgba(7, 10, 9, 0.58);
+}
+
+.transfer-file-label {
+  color: var(--transfer-accent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.transfer-file-control input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 4px;
+  color: var(--muted-high);
+  background: #0b100e;
+  font: 0.67rem "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transfer-file-control input::file-selector-button {
+  min-height: 34px;
+  margin-right: 10px;
+  border: 0;
+  padding: 7px 10px;
+  color: #19160c;
+  background: var(--transfer-accent);
+  cursor: pointer;
+  font: 700 0.61rem "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.transfer-file-control > p,
+.transfer-import-action > p {
+  margin: 0;
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.6rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.transfer-selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, var(--transfer-accent) 42%, var(--line));
+  padding: 13px;
+  background: color-mix(in srgb, var(--transfer-accent) 5%, transparent);
+}
+
+.transfer-selection > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.transfer-selection span,
+.transfer-selection small {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.transfer-selection strong {
+  min-width: 0;
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.transfer-drop-idle {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-soft);
+  padding: 12px 13px;
+  color: var(--muted);
+  background: rgba(7, 10, 9, 0.45);
+}
+
+.transfer-drop-idle span {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  padding: 5px 6px;
+  color: var(--transfer-accent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+}
+
+.transfer-drop-idle p {
+  min-width: 0;
+  margin: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.61rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.transfer-status,
+.transfer-result,
+.transfer-alert {
+  position: relative;
+  margin: 16px 0 0;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  padding: 12px 14px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  line-height: 1.55;
+}
+
+.transfer-status {
+  border-left-color: var(--transfer-accent);
+  padding-left: 30px;
+  color: #e6d39d;
+  background: color-mix(in srgb, var(--transfer-accent) 5%, transparent);
+}
+
+.transfer-status::before {
+  position: absolute;
+  top: 17px;
+  left: 14px;
+  width: 7px;
+  height: 7px;
+  background: var(--transfer-accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--transfer-accent) 64%, transparent);
+  animation: transfer-pulse 850ms ease-in-out infinite alternate;
+  content: "";
+}
+
+.transfer-result,
+.transfer-alert {
+  display: grid;
+  gap: 5px;
+}
+
+.transfer-result {
+  border-left-color: var(--signal);
+  color: var(--muted-high);
+  background: color-mix(in srgb, var(--signal) 5%, transparent);
+}
+
+.transfer-result strong {
+  color: var(--signal);
+  text-transform: uppercase;
+}
+
+.transfer-result small {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.transfer-alert {
+  border-left-color: var(--offline);
+  color: #ffb0a1;
+  background: color-mix(in srgb, var(--offline) 6%, transparent);
+}
+
+.transfer-alert strong {
+  color: var(--offline);
+  text-transform: uppercase;
+}
+
+.transfer-alert--uncertain {
+  border-color: color-mix(in srgb, var(--transfer-accent) 45%, var(--line));
+  border-left-color: var(--transfer-accent);
+  color: #e6d39d;
+  background: color-mix(in srgb, var(--transfer-accent) 7%, transparent);
+}
+
+.transfer-alert--uncertain strong {
+  color: var(--transfer-accent);
+}
+
+[data-transfer-heading]:focus-visible,
+.transfer-result:focus-visible,
+.transfer-alert:focus-visible {
+  outline: 3px solid var(--transfer-accent);
+  outline-offset: 5px;
+}
+
+.transfer-preview {
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 18px;
+  border: 1px solid color-mix(in srgb, var(--transfer-accent) 34%, var(--line));
+  padding: 17px;
+  background: rgba(5, 8, 7, 0.56);
+}
+
+.transfer-preview__heading {
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+}
+
+.transfer-preview__heading .eyebrow {
+  margin-bottom: 8px;
+  font-size: 0.55rem;
+}
+
+.transfer-preview h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.transfer-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  min-width: 0;
+  margin: 0 0 14px;
+  background: var(--line);
+}
+
+.transfer-counts > div {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  justify-content: space-between;
+  gap: 8px;
+  flex-direction: column;
+  padding: 11px 10px;
+  background: #0c110f;
+}
+
+.transfer-counts dt {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.transfer-counts dd {
+  margin: 0;
+  color: var(--transfer-accent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.transfer-preview__clear {
+  margin: 0;
+  border-left: 2px solid var(--signal);
+  padding: 9px 11px;
+  color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 4%, transparent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.6rem;
+  line-height: 1.45;
+}
+
+.transfer-issues {
+  min-width: 0;
+  margin-top: 15px;
+  border-top: 1px solid color-mix(in srgb, var(--offline) 35%, var(--line));
+  padding-top: 13px;
+}
+
+.transfer-issues__label {
+  margin: 0 0 9px;
+  color: var(--offline);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.transfer-issues ol {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-issues li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  gap: 7px 12px;
+  border-left: 2px solid var(--offline);
+  padding: 10px 11px;
+  color: var(--muted-high);
+  background: color-mix(in srgb, var(--offline) 4%, transparent);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.transfer-issues li p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.transfer-issues li code {
+  max-width: 100%;
+  color: var(--offline);
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.transfer-issues li > span:last-child {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.transfer-import-action {
+  display: grid;
+  min-width: 0;
+  gap: 13px;
+  margin-top: 18px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 17px;
+}
+
+.transfer-import-action .transfer-action {
+  width: 100%;
+}
+
+@keyframes transfer-pulse {
+  from {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .registry-footer {
   padding-top: 18px;
 }
@@ -2165,6 +2752,9 @@ h2 {
   .editor-state {
     width: 100%;
   }
+  .transfer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
@@ -2188,13 +2778,15 @@ h2 {
     display: grid;
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
   }
 
   .view-switcher button {
+    min-width: 0;
     min-height: 44px;
     padding: 8px 4px 7px;
+    overflow-wrap: anywhere;
   }
 
   .brand-lockup > span:last-child {
@@ -2468,6 +3060,99 @@ h2 {
 
   .confirm-dialog__actions button {
     min-height: 46px;
+  }
+  .transfer-header {
+    margin-bottom: 28px;
+  }
+
+  .transfer-boundary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 11px 12px;
+  }
+
+  .transfer-boundary p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .transfer-boundary > span:last-child {
+    justify-self: end;
+  }
+
+  .transfer-grid,
+  .transfer-panel,
+  .transfer-preview,
+  .transfer-selection,
+  .transfer-status,
+  .transfer-result,
+  .transfer-alert {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .transfer-panel {
+    padding: 24px 16px 20px;
+  }
+
+  .transfer-panel__index {
+    top: 17px;
+    right: 13px;
+    font-size: 3.35rem;
+  }
+
+  .transfer-panel h2 {
+    max-width: 10ch;
+    font-size: clamp(2rem, 12vw, 3.1rem);
+  }
+
+  .transfer-file-control {
+    padding: 13px;
+  }
+
+  .transfer-file-control input,
+  .transfer-file-control input::file-selector-button,
+  .transfer-action {
+    min-height: 44px;
+  }
+
+  .transfer-file-control input {
+    font-size: 0.62rem;
+  }
+
+  .transfer-selection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transfer-selection .transfer-action,
+  .transfer-panel > .transfer-action,
+  .transfer-import-action .transfer-action {
+    width: 100%;
+  }
+
+  .transfer-drop-idle {
+    align-items: flex-start;
+  }
+
+  .transfer-preview {
+    padding: 14px;
+  }
+
+  .transfer-counts > div {
+    min-height: 72px;
+    padding: 10px 8px;
+  }
+
+  .transfer-counts dd {
+    font-size: 1.4rem;
+  }
+
+  .transfer-issues li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transfer-issues li > span:last-child {
+    grid-column: 1;
   }
 }
 

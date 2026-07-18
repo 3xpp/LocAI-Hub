@@ -454,7 +454,7 @@ export function useTransfer(enabled: boolean): TransferController {
     if (activity.current !== 'idle') return false
     if (
       requiresDiscardConfirmation(selection.current, preview.current) &&
-      !window.confirm('Discard the prepared import and leave Transfer?')
+      !window.confirm('Discard prepared import and selected bundle?')
     ) {
       return false
     }

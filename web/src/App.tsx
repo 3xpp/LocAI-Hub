@@ -13,6 +13,8 @@ import { ModelList } from './components/ModelList'
 import { OllamaStatusCard } from './components/OllamaStatusCard'
 import { PromptRegistry } from './features/prompts/PromptRegistry'
 import { usePromptRegistry } from './features/prompts/usePromptRegistry'
+import { TransferView } from './features/transfer/TransferView'
+import { useTransfer } from './features/transfer/useTransfer'
 import { WorkflowRegistry } from './features/workflows/WorkflowRegistry'
 import { useWorkflowRegistry } from './features/workflows/useWorkflowRegistry'
 
@@ -34,7 +36,7 @@ const messageFrom = (error: unknown) =>
 const wasAborted = (error: unknown, signal: AbortSignal) =>
   signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
 
-type ActiveView = 'overview' | 'prompts' | 'workflows'
+type ActiveView = 'overview' | 'prompts' | 'workflows' | 'transfer'
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('overview')
@@ -45,6 +47,7 @@ export default function App() {
   const activeRequest = useRef<AbortController | null>(null)
   const promptRegistry = usePromptRegistry(activeView === 'prompts')
   const workflowRegistry = useWorkflowRegistry(activeView === 'workflows')
+  const transfer = useTransfer(activeView === 'transfer')
 
   const refresh = useCallback(async () => {
     activeRequest.current?.abort()
@@ -105,6 +108,7 @@ export default function App() {
     if (target === activeView) return
     if (activeView === 'prompts' && !promptRegistry.confirmDiscard()) return
     if (activeView === 'workflows' && !workflowRegistry.confirmDiscard()) return
+    if (activeView === 'transfer' && !transfer.confirmDiscard()) return
     setActiveView(target)
   }
 
@@ -139,6 +143,13 @@ export default function App() {
               onClick={() => navigateTo('workflows')}
             >
               Workflows
+            </button>
+            <button
+              type="button"
+              aria-current={activeView === 'transfer' ? 'page' : undefined}
+              onClick={() => navigateTo('transfer')}
+            >
+              Transfer
             </button>
           </nav>
           <p className="node-label">
@@ -195,13 +206,15 @@ export default function App() {
             <span aria-hidden="true">//</span>
             <span>Running on your machine</span>
             <span className="footer__rule" aria-hidden="true" />
-            <span>Phase 00</span>
+            <span>Phase 01</span>
           </footer>
         </>
       ) : activeView === 'prompts' ? (
         <PromptRegistry controller={promptRegistry} />
-      ) : (
+      ) : activeView === 'workflows' ? (
         <WorkflowRegistry controller={workflowRegistry} />
+      ) : (
+        <TransferView controller={transfer} />
       )}
     </main>
   )

@@ -5,6 +5,15 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import App from './App'
 import { listPrompts } from './api/prompts'
 import {
+  TransferHttpError,
+  exportTransferBundle,
+  importTransferBundle,
+  previewTransferBundle,
+  type TransferExportResult,
+  type TransferImportResponse,
+  type TransferPreviewResponse,
+} from './api/transfer'
+import {
   createWorkflowLink,
   deleteWorkflowLink,
   getWorkflowLink,
@@ -42,12 +51,25 @@ vi.mock('./api/workflowLinks', () => ({
   updateWorkflowLink: vi.fn(),
 }))
 
+vi.mock('./api/transfer', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./api/transfer')>()
+  return {
+    ...actual,
+    exportTransferBundle: vi.fn(),
+    importTransferBundle: vi.fn(),
+    previewTransferBundle: vi.fn(),
+  }
+})
+
 const listPromptsMock = vi.mocked(listPrompts)
 const listWorkflowLinksMock = vi.mocked(listWorkflowLinks)
 const getWorkflowLinkMock = vi.mocked(getWorkflowLink)
 const createWorkflowLinkMock = vi.mocked(createWorkflowLink)
 const deleteWorkflowLinkMock = vi.mocked(deleteWorkflowLink)
 
+const exportTransferBundleMock = vi.mocked(exportTransferBundle)
+const previewTransferBundleMock = vi.mocked(previewTransferBundle)
+const importTransferBundleMock = vi.mocked(importTransferBundle)
 const timestamp = '2026-07-12T12:30:00Z'
 
 const workflowLink = (id: number, title: string): WorkflowLink => ({
@@ -68,6 +90,58 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
+const transferRaw =
+  '{"application":"local-ai-workflow-hub","format_version":1,"exported_at":"2026-07-18T12:00:00Z","records":[]}'
+
+const transferPreview: TransferPreviewResponse = {
+  valid: true,
+  importable: true,
+  format_version: 1,
+  counts: { total: 2, prompts: 1, workflow_links: 1 },
+  duplicates: { total: 0, prompts: 0, workflow_links: 0 },
+  warnings: [],
+}
+
+const emptyTransferPreview: TransferPreviewResponse = {
+  valid: true,
+  importable: false,
+  format_version: 1,
+  counts: { total: 0, prompts: 0, workflow_links: 0 },
+  duplicates: { total: 0, prompts: 0, workflow_links: 0 },
+  warnings: [
+    {
+      code: 'empty_bundle',
+      message: 'This bundle contains no records and cannot be imported.',
+    },
+  ],
+}
+
+const transferImportResult: TransferImportResponse = {
+  imported: { total: 2, prompts: 1, workflow_links: 1 },
+  duplicates_imported: { total: 0, prompts: 0, workflow_links: 0 },
+}
+
+const transferExportResult: TransferExportResult = {
+  bundle: {
+    application: 'local-ai-workflow-hub',
+    format_version: 1,
+    exported_at: '2026-07-18T12:00:00Z',
+    records: [],
+  },
+  rawJson: transferRaw,
+  filename: 'local-ai-workflow-hub-20260718T120000Z.json',
+  counts: { total: 0, prompts: 0, workflow_links: 0 },
+}
+
+function transferFile(filename = 'portable.json'): File {
+  const bytes = new TextEncoder().encode(transferRaw)
+  const file = new File([bytes], filename, { type: 'application/json' })
+  Object.defineProperty(file, 'arrayBuffer', {
+    value: vi.fn().mockResolvedValue(bytes.buffer),
+  })
+  return file
+}
+
 beforeEach(() => {
   listPromptsMock.mockReset().mockResolvedValue({
     items: [],
@@ -84,6 +158,9 @@ beforeEach(() => {
   getWorkflowLinkMock.mockReset()
   createWorkflowLinkMock.mockReset()
   deleteWorkflowLinkMock.mockReset()
+  exportTransferBundleMock.mockReset().mockResolvedValue(transferExportResult)
+  previewTransferBundleMock.mockReset().mockResolvedValue(transferPreview)
+  importTransferBundleMock.mockReset().mockResolvedValue(transferImportResult)
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockImplementation((query: string) => ({
@@ -103,7 +180,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-it('navigates among Overview, Prompts, and Workflows through one masthead', async () => {
+it('navigates among Overview, Prompts, Workflows, and Transfer through one masthead', async () => {
   const user = userEvent.setup()
   render(<App />)
 
@@ -112,6 +189,8 @@ it('navigates among Overview, Prompts, and Workflows through one masthead', asyn
   expect(await screen.findByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Prompts' }))
   expect(await screen.findByRole('heading', { name: 'Prompt registry' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  expect(await screen.findByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Overview' }))
   expect(screen.getByRole('heading', { name: /local stack/i })).toBeInTheDocument()
 })
@@ -134,7 +213,7 @@ it('keeps Prompts active when its dirty-state guard cancels Workflows navigation
   expect(listWorkflowLinksMock).not.toHaveBeenCalled()
 })
 
-it.each(['Overview', 'Prompts'])('keeps Workflows active when its dirty guard cancels %s navigation', async (target) => {
+it.each(['Overview', 'Prompts', 'Transfer'])('keeps Workflows active when its dirty guard cancels %s navigation', async (target) => {
   const confirm = vi.fn().mockReturnValue(false)
   vi.stubGlobal('confirm', confirm)
   const user = userEvent.setup()
@@ -152,7 +231,7 @@ it.each(['Overview', 'Prompts'])('keeps Workflows active when its dirty guard ca
   expect(title).toHaveValue('Unsaved workflow link')
 })
 
-it('blocks Overview and Prompts while a workflow save is pending', async () => {
+it('blocks every other view while a workflow save is pending', async () => {
   const pendingSave = deferred<WorkflowLink>()
   createWorkflowLinkMock.mockReturnValueOnce(pendingSave.promise)
   const confirm = vi.fn()
@@ -173,11 +252,12 @@ it('blocks Overview and Prompts while a workflow save is pending', async () => {
 
   fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
   fireEvent.click(screen.getByRole('button', { name: 'Prompts' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
   expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
   expect(confirm).not.toHaveBeenCalled()
 })
 
-it('blocks Overview and Prompts while workflow deletion is pending', async () => {
+it('blocks every other view while workflow deletion is pending', async () => {
   const target = workflowLink(4, 'Pending delete navigation')
   const pendingDelete = deferred<void>()
   listWorkflowLinksMock.mockResolvedValueOnce({
@@ -211,6 +291,185 @@ it('blocks Overview and Prompts while workflow deletion is pending', async () =>
 
   fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
   fireEvent.click(screen.getByRole('button', { name: 'Prompts' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
   expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
   expect(confirm).not.toHaveBeenCalled()
+})
+
+it('shows Phase 01 and enters Transfer without starting a request', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+
+  expect(screen.getByText('Phase 01')).toBeInTheDocument()
+  const transferButton = screen.getByRole('button', { name: 'Transfer' })
+  await user.click(transferButton)
+
+  expect(await screen.findByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+  expect(transferButton).toHaveAttribute('aria-current', 'page')
+  expect(exportTransferBundleMock).not.toHaveBeenCalled()
+  expect(previewTransferBundleMock).not.toHaveBeenCalled()
+  expect(importTransferBundleMock).not.toHaveBeenCalled()
+})
+
+it('keeps Prompts active when its dirty guard cancels Transfer navigation', async () => {
+  const confirm = vi.fn().mockReturnValue(false)
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Prompts' }))
+  await screen.findByText('No prompts saved yet')
+  await user.click(screen.getByRole('button', { name: 'New prompt' }))
+  await user.type(screen.getByLabelText(/Prompt title/i), 'Unsaved transfer target')
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+
+  expect(confirm).toHaveBeenCalledWith('Discard unsaved prompt changes?')
+  expect(screen.getByRole('heading', { name: 'Prompt registry' })).toBeInTheDocument()
+  expect(previewTransferBundleMock).not.toHaveBeenCalled()
+})
+
+it('keeps Transfer active when prepared-import discard is cancelled', async () => {
+  const confirm = vi.fn().mockReturnValue(false)
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+  expect(await screen.findByRole('button', { name: 'Import records' })).toBeEnabled()
+  await user.click(screen.getByRole('button', { name: 'Overview' }))
+
+  expect(confirm).toHaveBeenCalledWith('Discard prepared import and selected bundle?')
+  expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+  expect(screen.getByText('portable.json')).toBeInTheDocument()
+})
+
+it('discards a prepared bundle only after confirmation and then navigates', async () => {
+  const confirm = vi.fn().mockReturnValue(true)
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+  expect(await screen.findByRole('button', { name: 'Import records' })).toBeEnabled()
+  await user.click(screen.getByRole('button', { name: 'Prompts' }))
+
+  expect(confirm).toHaveBeenCalledWith('Discard prepared import and selected bundle?')
+  expect(await screen.findByRole('heading', { name: 'Prompt registry' })).toBeInTheDocument()
+})
+
+it.each(['empty', 'invalid'])(
+  'leaves Transfer without confirmation for an %s selection',
+  async (outcome) => {
+    if (outcome === 'empty') {
+      previewTransferBundleMock.mockResolvedValueOnce(emptyTransferPreview)
+    } else {
+      previewTransferBundleMock.mockRejectedValueOnce(
+        new TransferHttpError(422, {
+          code: 'invalid_bundle',
+          message: 'Bundle validation failed.',
+          issues: [],
+          issues_truncated: false,
+        }),
+      )
+    }
+    const confirm = vi.fn()
+    vi.stubGlobal('confirm', confirm)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+    if (outcome === 'empty') {
+      await screen.findByText('No records to import')
+    } else {
+      await screen.findByRole('alert', { name: 'Import preview failed' })
+    }
+    await user.click(screen.getByRole('button', { name: 'Overview' }))
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: /local stack/i })).toBeInTheDocument()
+  },
+)
+
+it('blocks navigation without prompting while a preview is pending', async () => {
+  const request = deferred<TransferPreviewResponse>()
+  previewTransferBundleMock.mockReturnValueOnce(request.promise)
+  const confirm = vi.fn()
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+  await screen.findByRole('status', { name: 'Preview pending' })
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+
+  expect(confirm).not.toHaveBeenCalled()
+  expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+})
+
+it('blocks navigation without prompting while export is pending', async () => {
+  const request = deferred<TransferExportResult>()
+  exportTransferBundleMock.mockReturnValueOnce(request.promise)
+  const confirm = vi.fn()
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.click(screen.getByRole('button', { name: 'Download JSON bundle' }))
+  await screen.findByRole('status', { name: 'Export pending' })
+  fireEvent.click(screen.getByRole('button', { name: 'Prompts' }))
+
+  expect(confirm).not.toHaveBeenCalled()
+  expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+})
+
+it('blocks navigation and exposes no cancel while import is pending', async () => {
+  const request = deferred<TransferImportResponse>()
+  importTransferBundleMock.mockReturnValueOnce(request.promise)
+  const confirm = vi.fn()
+  vi.stubGlobal('confirm', confirm)
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+  await screen.findByRole('button', { name: 'Import records' })
+  await user.click(screen.getByRole('button', { name: 'Import records' }))
+  await user.click(screen.getByRole('button', { name: 'Confirm append-only import' }))
+  await screen.findByRole('status', { name: 'Import pending' })
+  fireEvent.click(screen.getByRole('button', { name: 'Workflows' }))
+
+  expect(confirm).not.toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+})
+
+it('reloads both registries on entry after a successful import', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: 'Prompts' }))
+  await screen.findByText('No prompts saved yet')
+  expect(listPromptsMock).toHaveBeenCalledTimes(1)
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await screen.findByText('No workflow links saved yet')
+  expect(listWorkflowLinksMock).toHaveBeenCalledTimes(1)
+
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  await user.upload(screen.getByLabelText('Select JSON bundle'), transferFile())
+  await screen.findByRole('button', { name: 'Import records' })
+  await user.click(screen.getByRole('button', { name: 'Import records' }))
+  await user.click(screen.getByRole('button', { name: 'Confirm append-only import' }))
+  await screen.findByRole('status', { name: 'Import complete' })
+
+  await user.click(screen.getByRole('button', { name: 'Prompts' }))
+  await screen.findByRole('heading', { name: 'Prompt registry' })
+  await vi.waitFor(() => expect(listPromptsMock).toHaveBeenCalledTimes(2))
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await screen.findByRole('heading', { name: 'Workflow links' })
+  await vi.waitFor(() => expect(listWorkflowLinksMock).toHaveBeenCalledTimes(2))
 })
