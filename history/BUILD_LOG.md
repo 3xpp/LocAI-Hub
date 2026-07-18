@@ -1431,3 +1431,32 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: record phase 1b acceptance validation`
+
+## 2026-07-13 — Phase 1C import/export design approved
+
+### Milestone
+
+- Resumed Phase 1C after explicit selection of the safe append-only transfer approach.
+- Approved a complete design for versioned JSON export, non-mutating preview, and atomic import of
+  Prompt and Workflow Link records.
+- Kept database identifiers and record timestamps local: imported records receive fresh IDs and
+  timestamps, and no Alembic migration is required.
+- Defined strict version 1 contracts, a 10 MiB encoded-file limit, a 5,000-record limit, bounded safe
+  validation issues, deterministic export ordering, and exact duplicate warnings.
+- Preserved every existing record and made re-import behavior explicit: duplicates are warned about
+  but appended only after confirmation.
+- Required one cross-table transaction, full rollback on failure, no remote/file-path imports, and
+  zero workflow-destination dereferencing.
+- Approved a fourth Transfer view with explicit sensitive-data warnings, memory-only selected-file
+  state, accessible preview/confirmation, guarded navigation, and registry refresh after success.
+- Defined backend, frontend, migration, Docker, proxy, Firefox, security, artifact, and cleanup
+  acceptance evidence for the final Phase 1 milestone.
+- Logged the repeated workspace patch-sandbox loopback failure factually in docs/FAILURES.md and
+  verified every patch-based fallback before staging.
+- Recorded the approved design in
+  `docs/superpowers/specs/2026-07-13-phase-1c-import-export-design.md`; implementation remains gated
+  on written-spec review and a committed task-by-task implementation plan.
+
+### Commit
+
+- `docs: add phase 1c import export design`

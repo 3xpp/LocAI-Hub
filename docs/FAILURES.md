@@ -1,6 +1,7 @@
 # Observed Failures and Resolutions
 
-This is a factual engineering log, not a list of hypothetical risks. It records failures or warnings actually observed while building and validating Phase 0, their impact, and their current status. Sensitive values and full environment output do not belong here.
+This is a factual engineering log, not a list of hypothetical risks. It records failures or
+warnings actually observed while building and validating the project, their impact, and their
 
 ## 2026-07-10 — pnpm was not available on PATH
 
@@ -127,3 +128,17 @@ from the source tree.
 
 **Prevention:** Final acceptance compares Docker context and layer sizes after dependencies and the
 production bundle have been generated locally.
+
+## 2026-07-13 — Workspace patch sandbox could not configure loopback
+
+**Status:** Environment limitation with verified patch-based fallback
+
+**Observed:** While writing the approved Phase 1C design, the workspace patch helper repeatedly
+failed before reading tracked files with `bwrap: loopback: Failed RTM_NEWADDR: Operation not
+permitted`. Several approved patch commands were also delayed substantially before returning.
+
+**Impact:** No repository content was lost or partially committed. The design work took longer than
+expected, and every fallback edit required an explicit diff verification before staging.
+
+**Current action:** Continue using patch-form edits, verify the exact Git diff after each fallback,
+and do not treat this agent-environment limitation as an application runtime failure.
