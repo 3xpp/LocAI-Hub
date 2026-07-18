@@ -1563,3 +1563,40 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add atomic transfer persistence`
+
+## 2026-07-18 — Bounded Phase 1C transfer API
+
+### Milestone
+
+- Added a streamed raw-body reader that accepts only UTF-8 JSON and enforces the final 10 MiB byte
+  limit even when `Content-Length` is absent, invalid, or misleading.
+- Added fixed no-store, no-cache, nosniff, UTF-8 JSON response headers for every transfer success and
+  failure; only successful exports receive a safe download filename.
+- Added `GET /api/transfer/export`, `POST /api/transfer/import/preview`, and
+  `POST /api/transfer/import`, mounted under the existing FastAPI application.
+- Made export deterministic and portable, with Prompts grouped before Workflow Links, no local IDs
+  or record timestamps, strict stored-data projection, and count plus encoded-byte fail-closed
+  limits.
+- Made preview non-mutating and import append-only, independently validating each request, reporting
+  exact duplicates, rejecting empty commits, and using the atomic cross-table repository.
+- Added fixed operation-specific 500 responses with best-effort rollback and no caught exception,
+  submitted value, unknown key, Prompt content, description, full URL, or request body reflection.
+- Proved transfer treats Workflow Link URLs only as inert editable data and never constructs an HTTP
+  client or requests a workflow destination.
+- Kept the schema, migrations, dependencies, lockfiles, Docker definitions, auth boundary, and
+  localhost-first deployment posture unchanged.
+
+### Verification
+
+- Captured the expected 19 failing API tests before the transfer routes existed.
+- `uv run pytest tests/unit/test_transfer_http.py tests/e2e/test_transfer_api.py -q` passed all 44
+  bounded HTTP and end-to-end transfer tests.
+- The complete backend suite passed all 483 tests with only the previously documented Starlette
+  TestClient deprecation warning.
+- Repository-wide Ruff lint passed, strict mypy passed across 33 backend source files, and Ruff
+  format verification passed all 54 Python files.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add import and export api`
