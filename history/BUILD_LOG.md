@@ -1839,3 +1839,37 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `chore: finalize phase 1c integration`
+
+## 2026-07-18 — Firefox 320 px overflow correction
+
+### Milestone
+
+- Reopened the Phase 1C final-acceptance candidate after exact Firefox BiDi validation found a real
+  12 px horizontal scroll range at a 320 px viewport.
+- Traced the mismatch to the vertical scrollbar reducing the layout client width to 308 px while
+  `html` and `body` each retained a 320 px minimum width. The actual dashboard, navigation, Transfer
+  panels, and file control already fit the available content width.
+- Removed only the two root minimum-width declarations; no component behavior, dependency, lockfile,
+  backend, database schema, Docker, environment, or deployment configuration changed.
+- Added a focused stylesheet regression that prevents the root declarations from being restored.
+  This entry supersedes any pre-real-browser responsive claim for the earlier exact candidate.
+- Kept Phase 1C final acceptance pending until the complete gate, migration, Compose, functional
+  Firefox, viewport, scope, artifact, and cleanup suite is rerun from the corrective commit.
+
+### Verification
+
+- Captured the focused regression failure while both root declarations were present, then passed the
+  corrected focused test: one test in one file.
+- `make test-web` passed all 293 frontend tests across 17 files.
+- Frontend lint, typecheck, and the Vite production build passed; Vite transformed 56 modules and
+  emitted bounded local assets.
+- `git diff --check` passed for the corrective milestone candidate.
+- Firefox 152.0.5 passed exact 320, 600, 601, and 1,280 px BiDi viewports at 900 px high. At 320 px,
+  the 308 px client, document-scroll, and body-scroll widths matched with no horizontal overflow.
+- Navigation controls remained equal-width, single-row, and at least 44 px high through 600 px;
+  Transfer panels stacked through 601 px and shared a row at 1,280 px; the dashboard, navigation,
+  panels, grid, and file input stayed within the scrollbar-aware client width at every size.
+
+### Commit
+
+- `fix: prevent 320px transfer overflow`

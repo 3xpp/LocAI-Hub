@@ -25,13 +25,11 @@
 }
 
 html {
-  min-width: 320px;
   min-height: 100%;
   background: var(--base);
 }
 
 body {
-  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   background:

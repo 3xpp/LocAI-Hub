@@ -142,3 +142,23 @@ expected, and every fallback edit required an explicit diff verification before 
 
 **Current action:** Continue using patch-form edits, verify the exact Git diff after each fallback,
 and do not treat this agent-environment limitation as an application runtime failure.
+
+## 2026-07-18 — Root minimum width caused Firefox overflow at 320 px
+
+**Status:** Resolved
+
+**Observed:** The exact Firefox BiDi acceptance viewport reported a 320 px window with a 308 px
+layout width after the vertical scrollbar was allocated. The document and body still measured 320
+px wide, creating a 12 px horizontal scroll range even though the dashboard, navigation, Transfer
+panels, and file control fit within the available 308 px content area.
+
+**Cause:** Both `html` and `body` declared `min-width: 320px`, so the root boxes could not shrink to
+the scrollbar-reduced layout width.
+
+**Resolution:** Removed the two root minimum-width declarations and added a focused stylesheet
+regression test. Firefox 152.0.5 then reported equal client, document-scroll, and body-scroll widths
+at exact 320, 600, 601, and 1,280 px BiDi viewports.
+
+**Prevention:** Keep the focused root-width guard and rerun the exact real-browser viewport matrix
+whenever global or Transfer responsive styles change. Static CSS and DOM-bound checks do not replace
+the scrollbar-aware browser assertion.
