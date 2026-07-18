@@ -1460,3 +1460,41 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 1c import export design`
+
+## 2026-07-18 — Phase 1C implementation plan approved
+
+### Milestone
+
+- Converted the approved Phase 1C import/export design into a nine-task, test-first implementation
+  plan covering strict transfer contracts, atomic persistence, bounded FastAPI routes, frontend
+  runtime validation, memory-only file state, accessible UI, dashboard integration, documentation,
+  and exact-candidate acceptance.
+- Fixed the implementation boundary at no schema migration, no runtime dependency, no remote import,
+  no workflow-destination request, and no change to the existing localhost-first deployment posture.
+- Planned deterministic version 1 exports, non-mutating previews, append-all duplicate behavior, and
+  one cross-table commit with full rollback on persistence failure.
+- Planned explicit 10 MiB, 5,000-record, and 100-safe-issue limits on both backend and frontend
+  boundaries, including raw streamed request handling and fatal UTF-8 file decoding.
+- Planned a fourth Transfer dashboard view with sensitive-data warnings, prepared-import navigation
+  protection, uncertain-outcome handling, no automatic retry, temporary download URL cleanup, and
+  accessible focus/live-region behavior.
+- Added exact host, migration, isolated Compose, proxy, Firefox viewport, destination-sentinel,
+  artifact, cleanup, Git, and remote-state validation steps for completing Phase 1.
+- Identified and planned a safe `make build` recipe that uses `/dev/null` as the Compose env file and
+  an explicit non-routable sample Ollama URL, preventing implicit reads of an ignored `.env` during
+  acceptance.
+- Self-reviewed the plan against the approved specification and requested an independent read-only
+  audit before implementation.
+
+### Verification
+
+- Confirmed every implementation task names exact files, red-first tests, focused commands, broad
+  regression gates, history updates, and a conventional commit.
+- Confirmed the plan changes no dependency manifest, lockfile, SQLAlchemy model, migration, Docker
+  runtime definition, authentication boundary, or protected secret file.
+- Confirmed Phase 1C remains append-only and local-file-only, with zero Docker socket, n8n API,
+  cloud AI, arbitrary execution, or production deployment scope.
+
+### Commit
+
+- `docs: add phase 1c implementation plan`
