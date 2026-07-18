@@ -1635,3 +1635,44 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add transfer frontend contracts`
+
+## 2026-07-18 — Memory-only Phase 1C transfer controller
+
+### Milestone
+
+- Added a fatal UTF-8 local-file boundary with exact pre-read and post-read 10 MiB checks plus fixed
+  non-reflective errors for oversized, unreadable, and invalidly encoded bundles.
+- Kept selected raw JSON only in a private controller ref; React state contains filename, byte size,
+  bounded preview metadata, fixed errors, and safe result counts but never a File or record values.
+- Added generation-based stale-result rejection, explicit activity locking, preview/export
+  AbortControllers, disable/unmount cleanup, and Strict Mode lifecycle replay safety.
+- Added non-mutating automatic preview after an explicit file selection, valid-empty and invalid
+  states, bounded safe issue metadata, and an explicit Preview again transition.
+- Added a one-shot import confirmation path with the original private raw body, no AbortSignal, no
+  automatic retry, full selected-data release on success, and fresh-preview invalidation on every
+  failure.
+- Marked network loss or malformed successful import responses as uncertain and required a new
+  preview before any later import attempt.
+- Added prepared-import navigation confirmation, pending navigation blocking, and a beforeunload
+  warning only while an operation is pending or a fresh non-empty import is prepared.
+- Added explicit export download handling with a temporary Blob, hidden anchor, object URL, and
+  unconditional anchor removal plus URL revocation; only validated safe counts remain afterward.
+- Kept browser persistence, direct fetches, dependencies, lockfiles, backend, database schema,
+  Docker definitions, and deployment behavior unchanged.
+
+### Verification
+
+- Captured the expected missing-module failures before the state and controller modules existed.
+- Reproduced a React Strict Mode lifecycle replay regression with a failing test, then restored the
+  mounted flag during effect setup while retaining real unmount abort and release behavior.
+- `pnpm exec vitest run src/features/transfer/transferState.test.ts
+  src/features/transfer/TransferView.test.tsx` passed all 21 focused tests.
+- Required `make test-web` passed all 271 frontend tests across 16 files.
+- `pnpm lint` and `pnpm typecheck` passed.
+- A scoped memory/safety audit found no localStorage, sessionStorage, IndexedDB, direct fetch, or
+  File-in-React-state use in the controller milestone.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add transfer workflow controller`
