@@ -1498,3 +1498,37 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 1c implementation plan`
+
+## 2026-07-18 — Strict Phase 1C transfer contracts
+
+### Milestone
+
+- Added pure portable Prompt and Workflow Link records with no local IDs or per-record timestamps.
+- Added strict fail-closed projection for canonical stored values while preserving legacy Prompt
+  `NULL` and empty tags as an empty portable tag list.
+- Added deterministic version 1 manifest serialization, UTF-8 output, type-aware counts, exact
+  tag-order-independent fingerprints, in-bundle duplicate counting, and fixed preview warnings.
+- Added duplicate-key-safe UTF-8 JSON decoding that rejects non-standard numeric constants,
+  trailing content, malformed input, excessive nesting, and unsupported manifests.
+- Added closed strict Pydantic schemas for both record types, normalized incoming editable values,
+  deterministic application/version/count precedence, and zero-offset RFC 3339 timestamps.
+- Added bounded validation issue mapping with at most 100 fixed safe issues; submitted values,
+  unknown keys, Prompt content, descriptions, full URLs, and raw Pydantic messages are never
+  reflected.
+- Kept the database schema, migrations, dependency manifests, lockfiles, Docker definitions, and
+  existing Prompt/Workflow behavior unchanged.
+
+### Verification
+
+- Captured the expected red collection failures before the transfer service and schema modules
+  existed.
+- `uv run pytest tests/unit/test_transfer_service.py tests/unit/test_transfer_schemas.py -q` passed
+  all 93 transfer contract tests.
+- Existing Prompt and Workflow Link service regression suites passed all 157 tests.
+- Repository-wide Ruff lint passed, strict mypy passed across 32 backend source files, and Ruff
+  format verification passed all 52 Python files.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add transfer bundle contracts`
