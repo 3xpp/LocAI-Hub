@@ -1600,3 +1600,38 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add import and export api`
+
+## 2026-07-18 — Strict Phase 1C frontend transfer contracts
+
+### Milestone
+
+- Added closed TypeScript contracts for portable bundles, preview/import counts, fixed warnings,
+  bounded validation issues, safe transfer errors, and uncertain import outcomes.
+- Added a dedicated relative-path transfer client that sends selected JSON text as the original raw
+  request body and never retries an import.
+- Added strict exact-key runtime validation for application/version/type literals, UTC timestamps,
+  Prompt and Workflow Link field bounds, canonical tags, inert safe URLs, record grouping, counts,
+  warnings, errors, and the 5,000-record limit.
+- Added encoded UTF-8 enforcement for the 10 MiB export limit plus a fixed allowlisted download
+  filename parser; invalid or missing disposition metadata is rejected.
+- Replaced backend-provided error text with fixed local messages and bounded allowlisted metadata so
+  submitted values and unknown fields cannot be reflected into the UI.
+- Made network loss and malformed successful import responses explicitly uncertain while keeping
+  export/preview abortable and exposing no import AbortSignal or retry option.
+- Kept the shared API client, dependencies, lockfile, backend, database schema, Docker definitions,
+  and deployment boundary unchanged.
+
+### Verification
+
+- Captured the expected module-not-found failure before the transfer client existed.
+- `pnpm exec vitest run src/api/transfer.test.ts` passed all 37 focused runtime and request tests.
+- The complete pre-controller frontend suite passed all 250 tests across 14 files.
+- Scoped ESLint passed for both transfer client files, project frontend lint passed before the
+  independent controller files appeared, and `pnpm typecheck` passed.
+- Confirmed mocked requests use only the three local `/api/transfer` paths and never contact a
+  Workflow Link destination.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add transfer frontend contracts`
