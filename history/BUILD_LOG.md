@@ -1873,3 +1873,90 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `fix: prevent 320px transfer overflow`
+
+## 2026-07-18 — Phase 1C final acceptance and Phase 1 completion
+
+### Exact candidate
+
+- Restarted every final-acceptance gate from corrective commit
+  `7b5ec9fe402dc6d84b092ba5bd231be7c1236887`; no pass from the superseded candidate was reused.
+- `make install` passed: uv resolved 58 and checked 56 packages, and pnpm found the lockfile current.
+  pnpm printed its existing ignored-esbuild-build-script warning without changing dependencies or
+  the lockfile.
+- `make format` left all 54 Python files unchanged. `git diff --check` passed and no tracked file was
+  changed by installation, formatting, tests, or builds.
+
+### Host and build gates
+
+- `make test` passed 483 backend tests and `make test-e2e` passed 155 tests. Each emitted only the
+  already documented Starlette TestClient deprecation warning.
+- `make test-web` passed all 293 frontend tests across 17 files, including the root-width regression.
+- `make lint` passed Ruff and ESLint; `make typecheck` passed strict mypy across 33 source files and
+  TypeScript; `uv run ruff format --check .` confirmed all 54 Python files formatted.
+- The Vite production build transformed 56 modules and emitted 0.58 kB HTML, 51.42 kB CSS, and
+  287.25 kB JavaScript before gzip.
+- `make build` rebuilt both Compose images with the explicit safe Ollama URL and `/dev/null` env
+  file, then repeated the frontend build. Compose used its successful default-builder fallback and
+  printed only the already documented Bake-without-Buildx warning.
+
+### Migration and isolated Compose acceptance
+
+- The focused migration preservation test passed. Exactly revisions 0001 and 0002 remain, Alembic
+  reported no drift, and the 0001 SHA-256 remained
+  `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5`.
+- A disposable explicit-safe SQLite database upgraded to head, downgraded to 0001, upgraded to head,
+  passed `alembic check`, downgraded to base, and was removed with any sidecars.
+- Isolated project `local-ai-workflow-hub-phase1c-acceptance` started with `/dev/null` and
+  `OLLAMA_BASE_URL=http://127.0.0.1:9`. Direct and Vite-proxied health returned the exact response;
+  both paths reported graceful offline Ollama status and empty model results without crashing.
+- The configured container store resolved to `/pnpm/store/v10`, and no source `.pnpm-store` appeared.
+- Direct and proxied exports returned the same two portable Prompt-then-Workflow records with safe
+  filenames and privacy headers, excluding record IDs and timestamps.
+- Empty, malformed, unsupported-version, private-invalid, and exact-duplicate previews returned
+  200, 400, 422, 422, and 200 respectively with fixed safe contracts and zero registry mutation.
+- A direct import and a proxied repeat each returned 201, appended both exact duplicates, produced
+  IDs 1–3 with distinct fresh UTC timestamps in each registry, and preserved all editable fields.
+  A proxied empty import returned fixed `empty_bundle` 422 without mutation.
+- Transfer responses exposed no submitted marker or complete sentinel URL, API logs contained
+  neither value, and the in-network Workflow Link destination sentinel recorded zero requests.
+- Removed the sentinel, two service containers, acceptance network, and four task-owned volumes.
+  Compose `ps -a` was empty and all 33 preexisting Docker volumes were unchanged.
+
+### Real Firefox acceptance
+
+- Firefox 152.0.5 with geckodriver 0.36.0 passed navigation across Overview, Prompts, Workflows, and
+  Transfer; the actual two-record download used a safe filename and portable content.
+- File handling passed fatal UTF-8, malformed, invalid, empty, mixed, duplicate, same-file reselection,
+  replacement, clear, and zero-mutation cases. Prepared-import cancellation and confirmation,
+  preview/export/import pending locks, dialog Cancel/Escape/Confirm, and focus/live regions passed.
+- Successful, definite-failure, uncertain-outcome, and repeated-duplicate imports behaved as
+  designed; uncertain or definite failure required a fresh preview, automatic retries remained zero,
+  and a successful import refreshed both registries.
+- Raw private values were not rendered, browser persistence stayed unchanged, the browser sentinel
+  received zero requests, and the delay proxy observed exactly one export, 11 previews, and four
+  import requests.
+- Firefox BiDi then passed exact 320, 600, 601, and 1,280 px viewports at 900 px high. The 320 px
+  viewport had a scrollbar-reduced 308 px client width, and document/body scroll widths also measured
+  308 px. All asserted navigation, dashboard, panel, grid, and file-input bounds passed; panels
+  stacked through 601 px and shared a row at 1,280 px.
+- The first functional-harness attempt had Vite pointed directly at the API instead of its task-owned
+  delay proxy, so the intended export-pending state could not be observed. The disposable database
+  was reset and the unchanged candidate passed after the verifier target was corrected.
+
+### Final scope and cleanup audit
+
+- Manifests and lockfiles, ORM models and migrations, Compose, Dockerfiles, and Vite configuration
+  have no diff from approved design commit `5ddbca3`; no new dependency, schema revision, deployment,
+  production, authentication, Docker socket/SDK, n8n key/integration, cloud AI, remote import, redirect,
+  or server-file capability appeared.
+- All 140 tracked paths passed the artifact audit. Only the safe `.env.example` is tracked; no real
+  environment, database, dependency, build, cache, bytecode, credential, certificate, key, or secret
+  artifact was added. Host service publishing remains loopback-only.
+- Git has no remote, upstream, or push-default configuration. All task-owned processes and listeners,
+  Firefox fixtures, harnesses, databases, sidecars, containers, networks, and volumes were removed.
+- Marked the approved Phase 1C design and README complete. Phase 1 is complete; Phase 2 remains a
+  separately approved future milestone.
+
+### Commit
+
+- `test: record phase 1c acceptance validation`

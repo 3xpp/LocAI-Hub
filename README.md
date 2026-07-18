@@ -14,7 +14,7 @@ A local-first control room for Ollama, reusable prompts, workflow references, an
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-Phase 1C implementation provides (final acceptance is pending):
+Phase 1C provides:
 
 - backend service health;
 - safe Ollama online/offline status;
@@ -39,8 +39,9 @@ Phase 1C implementation provides (final acceptance is pending):
 
 It remains intentionally read-only around Ollama and does not expose Docker, n8n, shell,
 model-management, prompt-execution, provider synchronization, or cloud-AI controls. Workflow links
-are stored references, not live service integrations. Phase 1C implementation is complete; its final
-acceptance is pending before Phase 1 is marked complete and Phase 2 begins.
+are stored references, not live service integrations. Phase 1C final acceptance passed from
+corrective commit `7b5ec9f`, completing Phase 1. Phase 2 remains unimplemented and requires a
+separately approved integration design.
 
 ## Architecture
 
@@ -288,7 +289,7 @@ Phase 1B final acceptance verifies:
 These gates were repeated from the exact committed Phase 1B candidate, including migration
 preservation, isolated Compose teardown, artifact/security review, and clean-Git audits.
 
-Phase 1C implementation tests currently cover the following behavior; final acceptance is pending:
+Phase 1C final acceptance verifies:
 
 - strict version 1 transfer manifests, normalization, deterministic projection, byte/record bounds,
   100-issue truncation, duplicate fingerprints, and sanitized errors;
@@ -300,8 +301,13 @@ Phase 1C implementation tests currently cover the following behavior; final acce
   Prompt/Workflow registry refresh after a successful import;
 - zero destination dereferences throughout backend and browser transfer paths.
 
-The pending final acceptance milestone will record fresh host, migration, production-build, isolated
-Compose, browser, security, artifact, and clean-Git evidence from the exact candidate.
+The exact corrective candidate `7b5ec9f` passed fresh dependency installation, formatting, 483
+backend tests, 155 end-to-end tests, 293 frontend tests, lint, strict typechecks, production builds,
+the reversible migration lifecycle, and isolated direct/proxied Compose transfer checks. Firefox
+152.0.5 also passed the complete operator workflow and exact 320, 600, 601, and 1,280 px viewport
+matrix. The acceptance stack, browser processes, temporary databases, and task-owned volumes were
+removed, and the final scope/artifact audit found no dependency, schema, deployment, secret, remote,
+or prohibited-capability drift.
 
 ## Security posture
 
@@ -350,8 +356,8 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 1. **Phase 0 — Observable MVP (complete):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
 2. **Phase 1A — Prompt Registry (complete):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
-4. **Phase 1C — Import/Export (implementation complete; final acceptance pending):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
-5. **Phase 2 — Read-only integrations (next after Phase 1C acceptance):** explicitly approved n8n and service/container visibility through constrained interfaces.
+4. **Phase 1C — Import/Export (complete):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
+5. **Phase 2 — Read-only integrations (next):** explicitly approved n8n and service/container visibility through constrained interfaces.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
