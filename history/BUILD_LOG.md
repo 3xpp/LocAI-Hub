@@ -1532,3 +1532,34 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add transfer bundle contracts`
+
+## 2026-07-18 — Atomic Phase 1C transfer persistence
+
+### Milestone
+
+- Added deterministic full-registry reads with Prompts ordered by ascending ID before Workflow
+  Links ordered by ascending ID.
+- Added combined row counting and stable empty read shapes without flushing or committing.
+- Added mixed Prompt and Workflow Link append persistence that constructs fresh ORM rows, preserves
+  incoming canonical tag order, and performs exactly one commit.
+- Kept imported identifiers and aware UTC timestamps database-generated; bundle timestamps are not
+  copied into local records.
+- Added best-effort rollback that preserves the original add, flush, or commit failure even when
+  rollback itself fails.
+- Proved a failure after both record types are pending leaves neither table with partial rows and
+  existing editable fields remain unchanged.
+- Reused the existing models and tag encoding without a migration, dependency, or CRUD repository
+  behavior change.
+
+### Verification
+
+- Captured the expected red collection failure before the transfer repository module existed.
+- `uv run pytest tests/unit/test_transfer_repository.py -q` passed all 8 atomic persistence tests.
+- Existing Prompt and Workflow Link repository regressions passed all 30 tests.
+- Repository-wide Ruff lint passed, strict mypy passed across 32 backend source files, and Ruff
+  format verification passed all 52 Python files.
+- `git diff --check` passed for the milestone candidate.
+
+### Commit
+
+- `feat: add atomic transfer persistence`
