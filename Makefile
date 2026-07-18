@@ -35,7 +35,7 @@ format:
 	cd backend && uv run ruff format . && uv run ruff check . --fix
 
 build:
-	docker compose build
+	OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null build
 	cd web && pnpm build
 
 db-upgrade:

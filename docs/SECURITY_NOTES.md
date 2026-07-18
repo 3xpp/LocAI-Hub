@@ -1,21 +1,21 @@
 # Security Notes
 
-## Phase 1B security posture
+## Phase 1C security posture
 
-Local AI Workflow Hub is an unauthenticated, local development dashboard. Phase 1B is designed for
+Local AI Workflow Hub is an unauthenticated, local development dashboard. Phase 1C is designed for
 one trusted operator on one machine. It is not a public service, remote administration plane, or
 production deployment profile. The Prompt and Workflow Links registries add local data read,
-create, update, copy/open, and permanent-delete capabilities; that increases the impact of
-unintended network access.
+create, update, copy/open, permanent-delete, and full-registry transfer capabilities; that increases
+the impact of unintended network access and downloaded-file disclosure.
 
 > Do not expose the dashboard or API publicly without authentication, authorization, TLS, network policy, audit logging, and a dedicated threat model.
 
 Loopback host bindings reduce accidental exposure; they are not a substitute for the missing controls.
 
-## Explicit Phase 1B boundaries
+## Explicit Phase 1C boundaries
 
 - **No Docker socket access:** Neither the application nor Compose mounts /var/run/docker.sock. There is no Docker SDK or container-control API.
-- **No n8n API key usage:** Phase 1B does not read N8N_API_KEY, call n8n, discover remote workflows,
+- **No n8n API key usage:** Phase 1C does not read N8N_API_KEY, call n8n, discover remote workflows,
   or mutate n8n workflows. An `n8n` tag is only operator-authored text.
 - **No service-administration actions:** There are no container restart buttons, arbitrary scripts,
   shell execution, Ollama pull/delete controls, or remote workflow mutation. Prompt and Workflow
@@ -86,10 +86,9 @@ Prompt data lives in SQLite:
 - docker compose down --volumes deliberately deletes it.
 
 Prompt deletion is a hard delete with a confirmation dialog and no application-level undo, archive, or
-restore. SQLite pages, filesystem snapshots, volume backups, and clipboard history may retain copies;
-hard delete is not a secure-erasure guarantee. Local-first storage does not automatically provide
-encryption, backups, retention controls, or secure deletion. Portable import/export is deferred to Phase
-1C, and operational recovery controls belong to later phases.
+restore. SQLite pages, filesystem snapshots, volume backups, clipboard history, and exported bundles
+may retain copies; hard delete is not a secure-erasure guarantee. Local-first storage and portable
+transfer do not automatically provide encryption, backups, retention controls, or secure deletion.
 
 ## Workflow Links data exposure and destination isolation
 
@@ -123,10 +122,40 @@ remote/local destination and has no application-level undo. As with prompts, dat
 filesystem snapshots, backups, browser history, and clipboard history may retain copies; hard
 delete is not secure erasure.
 
+## Import/export data boundary
+
+Phase 1C exports every Prompt followed by every Workflow Link into one versioned JSON bundle. The
+file can contain complete prompt text, descriptions, internal hostnames, query strings, fragments,
+or signed URL material. Protect it like the SQLite database. After download, browser history,
+filesystem permissions, backups, synchronization software, and other local processes are outside
+the Hub's control. The Hub does not encrypt, password-protect, sign, securely erase, or manage the
+retention of a bundle.
+
+- Export starts only after an explicit operator action. Successful transfer responses use
+  `Cache-Control: no-store`, `Pragma: no-cache`, and `X-Content-Type-Options: nosniff`; these reduce
+  application-controlled caching but cannot erase an intentionally downloaded file.
+- Import accepts only selected local UTF-8 JSON content. It accepts no remote URL, network share,
+  server filesystem path, SQLite file, or application-side file lookup. Workflow Link URLs remain
+  inert strings and are never resolved, fetched, previewed, or dereferenced during transfer.
+- Selected JSON is bounded to 10 MiB and remains in private browser memory for the active flow. It
+  is not placed in localStorage, sessionStorage, IndexedDB, the page URL, service workers, or a
+  module cache, and is released on clear, replacement, confirmed navigation, success, or unmount.
+- Preview strictly validates the complete bundle and duplicate counts without mutation. Import
+  independently revalidates the same raw content and appends all valid records in one transaction;
+  any write failure rolls back the complete import.
+- Validation responses expose only bounded issue locations and fixed messages. Request bodies,
+  filenames, prompt content, descriptions, complete URLs, raw exceptions, and submitted values are
+  not reflected into transfer errors or application logs.
+- Exact duplicates are warnings, not conflicts: confirmation imports them as new records with fresh
+  local IDs and timestamps. Version 1 transfer is not backup, restore, synchronization, merge,
+  deduplication, or secure deletion.
+
 ## Dependency and build safety
 
 - Backend and frontend dependencies are locked with uv.lock and pnpm-lock.yaml.
 - Docker builds use the frozen locks.
+- `make build` supplies an explicit safe Ollama URL and `/dev/null` Compose env file so build
+  validation does not implicitly interpolate an ignored local `.env` file.
 - Real environment files and local databases are excluded from Docker contexts.
 - Compose does not use privileged mode or the Docker socket.
 - Development images and source mounts are not a production hardening profile.

@@ -215,3 +215,19 @@ destination.
 stored through the shared plain-text codec and filtered exactly. Provider-aware discovery and
 read-only n8n/service visibility remain separately approved Phase 2 work; remote workflow mutation
 requires a later authentication, authorization, audit, and threat-model design.
+
+## 2026-07-18 — Versioned atomic portable transfer without a schema change
+
+**Decision:** Transfer typed API-level Prompt and Workflow Link records in a strict version 1 JSON
+bundle. Export the complete registries in deterministic Prompt-then-Workflow order, and import every
+valid non-empty record through one append-only transaction after an authoritative preview and
+explicit confirmation. Exact duplicates are reported but remain importable.
+
+**Why:** Portable local data is useful now, while stable cross-installation identity, merge policy,
+destructive restore, and database backup semantics require separate designs. Reusing current domain
+contracts keeps the format understandable without changing SQLite or adding a runtime dependency.
+
+**Consequence:** Bundles exclude database IDs and per-record timestamps; imports assign fresh local
+IDs and UTC timestamps and never update or delete existing rows. Local file content stays in browser
+memory for the active flow, with 10 MiB, 5,000-record, and 100-returned-issue bounds. Version 1 is not
+backup, restore, synchronization, merge, deduplication, encryption, signing, or secure deletion.

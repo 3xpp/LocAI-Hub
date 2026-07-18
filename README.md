@@ -4,15 +4,17 @@ A local-first control room for Ollama, reusable prompts, workflow references, an
 
 > [!WARNING]
 > The app has no authentication. Keep it on your own machine. Prompt and Workflow Link CRUD can
-> reveal, change, or permanently delete local data. Saved workflow URLs—including query strings and
-> fragments—are returned by the API. Do not expose the dashboard or API to a public or untrusted
-> network without authentication, authorization, TLS, and a deployment security review.
+> reveal, change, or permanently delete local data. Transfer exports include every Prompt and full
+> Workflow Link URL in one downloaded JSON file, while confirmed imports append records. Saved URLs
+> may include sensitive query strings or fragments. Protect exported files like the local database,
+> and do not expose the dashboard or API to a public or untrusted network without authentication,
+> authorization, TLS, and a deployment security review.
 
 ## What it does
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-Phase 1B provides:
+Phase 1C implementation provides (final acceptance is pending):
 
 - backend service health;
 - safe Ollama online/offline status;
@@ -27,14 +29,18 @@ Phase 1B provides:
   description, and tags, exact-tag filtering, and deterministic pagination;
 - a responsive workflow-link editor with explicit save, dirty-draft protection, persisted-URL
   Copy/Open actions, permanent-delete confirmation, async race ownership, and mobile focus return;
+- a fourth Transfer view with explicit full-registry version 1 JSON download, non-mutating import
+  preview, and confirmed atomic append-only import;
+- fresh local IDs and timestamps for every imported record, with exact duplicates reported before
+  confirmation and still appended when confirmed;
 - a responsive React dashboard;
 - repeatable uv, pnpm, Make, and Docker Compose workflows;
 - backend and frontend behavior tests that do not require a live Ollama server.
 
 It remains intentionally read-only around Ollama and does not expose Docker, n8n, shell,
 model-management, prompt-execution, provider synchronization, or cloud-AI controls. Workflow links
-are stored references, not live service integrations. Phase 1B implementation and final acceptance
-are complete; Phase 1C Import/Export is the next separately designed milestone.
+are stored references, not live service integrations. Phase 1C implementation is complete; its final
+acceptance is pending before Phase 1 is marked complete and Phase 2 begins.
 
 ## Architecture
 
@@ -49,7 +55,8 @@ FastAPI (127.0.0.1:8000)
   |-- health API
   |-- read-only Ollama client --> Ollama /api/tags
   |-- prompt CRUD/search API
-  '-- workflow-link CRUD/search API
+  |-- workflow-link CRUD/search API
+  '-- transfer export/preview/import API
           |
           '-- SQLAlchemy/Alembic -----> SQLite
 ~~~
@@ -64,6 +71,27 @@ Workflow-link list requests likewise return summaries, but each summary includes
 URL so the directory can show its validated origin. The backend never dereferences that URL. Create,
 retrieve, and replace responses return the full record, including description; deleting a record
 removes only the Hub bookmark and never changes its destination.
+
+## Transfer data
+
+The fourth **Transfer** view provides one deliberately explicit local workflow:
+
+1. Choose **Download JSON bundle** to export every Prompt followed by every Workflow Link in the
+   version 1 portable format.
+2. Select a local JSON file. The server validates and previews counts, exact duplicates, and bounded
+   safe issues without changing the database.
+3. Choose **Import records**, review the confirmation, and confirm to append every validated record
+   in one transaction. Imported records receive fresh local IDs and timestamps.
+
+Version 1 accepts at most 10 MiB (10,485,760 UTF-8 bytes), 5,000 combined records, and returns at
+most 100 validation issues. Duplicate matches are advisory: a confirmed import appends them as new
+records rather than merging, replacing, or skipping them. Re-importing the same bundle therefore
+creates another copy.
+
+This format moves editable registry data; it is not database backup, synchronization, restore, or
+disaster recovery. A downloaded bundle may contain private prompt text, internal hostnames, and
+sensitive URL query strings or fragments. The file is outside the Hub's control after download, so
+store and delete it with appropriate operating-system protections.
 
 ## Prerequisites
 
@@ -173,6 +201,9 @@ OLLAMA_BASE_URL accepts only a credential-free HTTP or HTTPS origin with a host 
 | GET | /api/workflow-links/{workflow_link_id} | Retrieve one workflow link with its full raw-text description. |
 | PUT | /api/workflow-links/{workflow_link_id} | Replace all editable fields and return canonical server values. |
 | DELETE | /api/workflow-links/{workflow_link_id} | Permanently delete one stored reference and return HTTP 204. |
+| GET | /api/transfer/export | Download the full version 1 Prompt and Workflow Link JSON bundle. |
+| POST | /api/transfer/import/preview | Validate and summarize a JSON bundle without database mutation. |
+| POST | /api/transfer/import | Revalidate and atomically append a non-empty bundle; returns HTTP 201 after commit. |
 
 Ollama being offline is an expected HTTP 200 response:
 
@@ -257,6 +288,21 @@ Phase 1B final acceptance verifies:
 These gates were repeated from the exact committed Phase 1B candidate, including migration
 preservation, isolated Compose teardown, artifact/security review, and clean-Git audits.
 
+Phase 1C implementation tests currently cover the following behavior; final acceptance is pending:
+
+- strict version 1 transfer manifests, normalization, deterministic projection, byte/record bounds,
+  100-issue truncation, duplicate fingerprints, and sanitized errors;
+- full export headers and ordering, mutation-free previews, fresh imported IDs/timestamps, repeated
+  duplicate imports, one-transaction commit, and complete rollback on injected failures;
+- browser contract validation, file and memory lifecycle, explicit download, import confirmation,
+  uncertain-response handling, focus/live-region behavior, and no automatic retry;
+- the fourth-view navigation guards, pending-operation blocking, responsive Transfer states, and
+  Prompt/Workflow registry refresh after a successful import;
+- zero destination dereferences throughout backend and browser transfer paths.
+
+The pending final acceptance milestone will record fresh host, migration, production-build, isolated
+Compose, browser, security, artifact, and clean-Git evidence from the exact candidate.
+
 ## Security posture
 
 - Host development ports bind to 127.0.0.1.
@@ -273,14 +319,24 @@ preservation, isolated Compose teardown, artifact/security review, and clean-Git
 - The Hub does not check destination health, fetch metadata, proxy, redirect, authenticate to n8n,
   or call a stored workflow URL. Open and Copy require explicit browser clicks and use persisted
   state only.
+- Selected bundle bytes, parsed records, filenames, and previews stay in React memory for the active
+  Transfer flow; they are not stored in browser persistence or a server-side staging table.
+- Transfer responses use no-store/no-cache privacy headers. Import accepts only bytes from an
+  explicitly selected local JSON file—not a filesystem path or URL—and neither preview, import, nor
+  export dereferences a Workflow Link destination.
+- Downloaded bundles are outside application control and are not encrypted or securely erased by
+  the Hub. Browser history, filesystem permissions, backups, and deletion remain the operator's
+  responsibility.
 
 Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure or integration scope.
 
 ## Current limitations
 
 - Prompt version history, archive/restore, soft deletion, and secure deletion are not implemented.
-- Hard-deleted prompts and workflow links cannot be restored by the app; portable import/export is
-  deferred to Phase 1C.
+- Hard-deleted prompts and workflow links cannot be restored by the app. Transfer imports append
+  new records and provide no undo, replacement, or exact database restoration.
+- Transfer has no merge, skip, deduplication, record selection, filtering, encryption, scheduled
+  export, backup, synchronization, or restore workflow.
 - Workflow links are generic references only. Provider discovery, n8n IDs/API calls, reachability,
   execution state, synchronization, previews, and remote mutation are not implemented.
 - Ollama integration is observation-only; there is no run, pull, or delete action.
@@ -294,8 +350,8 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 1. **Phase 0 — Observable MVP (complete):** health, Ollama status/models, persistence foundation, dashboard, and Docker development.
 2. **Phase 1A — Prompt Registry (complete):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
-4. **Phase 1C — Import/Export (next):** separately designed portable local prompt and workflow data.
-5. **Phase 2 — Read-only integrations:** explicitly approved n8n and service/container visibility through constrained interfaces.
+4. **Phase 1C — Import/Export (implementation complete; final acceptance pending):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
+5. **Phase 2 — Read-only integrations (next after Phase 1C acceptance):** explicitly approved n8n and service/container visibility through constrained interfaces.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
@@ -314,6 +370,8 @@ The project should be useful on a private localhost setup during Phases 1–2. S
 - [Phase 1A Prompt Registry implementation plan](docs/superpowers/plans/2026-07-10-phase-1a-prompt-registry.md)
 - [Approved Phase 1B Workflow Links design](docs/superpowers/specs/2026-07-12-phase-1b-workflow-links-design.md)
 - [Phase 1B Workflow Links implementation plan](docs/superpowers/plans/2026-07-12-phase-1b-workflow-links.md)
+- [Approved Phase 1C Import/Export design](docs/superpowers/specs/2026-07-13-phase-1c-import-export-design.md)
+- [Phase 1C Import/Export implementation plan](docs/superpowers/plans/2026-07-18-phase-1c-import-export.md)
 
 ## License
 

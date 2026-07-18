@@ -1756,3 +1756,86 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add safe import export interface`
+
+## 2026-07-18 — Phase 1C integration documentation and regression gates
+
+### Milestone
+
+- Hardened `make build` with an explicit safe Ollama origin and `/dev/null` Compose env file so a
+  build cannot implicitly interpolate an ignored local `.env` file.
+- Extended future-agent checks so Transfer UI behavior changes require the complete frontend test
+  suite alongside the existing Prompt and Workflow Links rule.
+- Documented the fourth Transfer view, version 1 full-registry format, three routes, explicit export,
+  non-mutating preview, one-transaction append import, fresh identity/time, duplicate semantics,
+  limits, local-file workflow, sensitivity, and non-backup/non-sync boundaries in the README.
+- Recorded the versioned typed API-level/no-schema decision and the 10 MiB, 5,000-record, and
+  100-returned-issue bounds.
+- Advanced the security posture to Phase 1C with memory-only selected content, privacy headers,
+  no reflected bundle values, no remote/path imports, inert Workflow Link destinations, downloaded
+  file responsibility, and no encryption or secure-erasure claims.
+- Marked the approved design implementation complete with final acceptance still pending; Phase 1
+  is not marked complete until the exact-candidate milestone passes.
+- Kept `docs/FAILURES.md` unchanged because no new application or repository incident occurred.
+
+### Host verification
+
+- `make install` passed: uv resolved 58 and checked 56 packages; pnpm found the frozen lock current.
+  pnpm printed its existing ignored-esbuild-build-script warning and a 10.15.1 to 11.14.0 update
+  notice; neither changed the pinned package manager or lockfile.
+- `make format` left all 54 Python files unchanged and its Ruff autofix check passed.
+- `make test` passed 483 backend tests; `make test-e2e` passed 155 tests. Each printed the already
+  documented Starlette TestClient deprecation warning and no other pytest warning.
+- `make test-web` passed all 292 frontend tests across 16 files.
+- `make lint`, `make typecheck`, and `uv run ruff format --check .` passed; mypy checked 33 source
+  files and Ruff confirmed 54 files formatted.
+- The Vite production build transformed 56 modules and emitted a 0.58 kB HTML file, 51.46 kB CSS,
+  and 287.25 kB JavaScript before gzip.
+- `make build` built both Compose images through the default Docker builder and rebuilt the same
+  frontend bundle. Compose printed the already documented Bake-without-Buildx warning.
+
+### Migration and Compose verification
+
+- The focused migration preservation test passed; only revisions 0001 and 0002 exist, no Alembic
+  drift was detected, and the 0001 checksum remained
+  `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5`.
+- A disposable safe SQLite database upgraded to head, downgraded to 0001, upgraded to head again,
+  downgraded to base, and was removed with its WAL/SHM sidecars.
+- Built and started isolated project `local-ai-workflow-hub-phase1c-acceptance` with `/dev/null` and
+  `OLLAMA_BASE_URL=http://127.0.0.1:9`; direct and Vite-proxied health returned the exact ok payload,
+  and both Ollama status paths returned the graceful offline HTTP 200 payload for that safe origin.
+- The isolated web container reported `/pnpm/store/v10`, and no source `.pnpm-store` appeared.
+- Seeded one synthetic Prompt and one inert sentinel Workflow Link. Direct and proxied exports
+  returned two Prompt-then-Workflow records with safe filenames/privacy headers and no record IDs or
+  per-record timestamps.
+- Empty, malformed, unsupported-version, and exact-duplicate previews returned 200/400/422/200 with
+  fixed safe contracts, complete privacy headers, no Content-Disposition, and zero registry mutation.
+- A direct import and a proxied repeat import each returned HTTP 201 with two imported and two exact
+  duplicate records. Final registries contained IDs 1, 2, and 3 in each domain, fresh distinct UTC
+  timestamps, and unchanged source editable fields.
+- A proxied empty import returned fixed `empty_bundle` HTTP 422 with privacy headers and no
+  Content-Disposition. Captured API logs contained method/path/status only and no submitted marker.
+- The disposable in-network destination sentinel received zero requests through export, preview,
+  two imports, and verification reads.
+- One acceptance assertion initially assumed ID-ascending registry presentation; observed order was
+  the existing deterministic UI order. The verifier was corrected to compare the ID set and fetch
+  details by ID; no application or repository correction was required.
+- Stopped and removed the sentinel, acceptance containers, network, and four task-owned volumes.
+  Compose `ps -a` was empty and all 33 preexisting volumes, including the main project's four named
+  volumes, were unchanged.
+
+### Scope and artifact audit
+
+- Dependency manifests and lockfiles have no diff from approved design commit `5ddbca3`.
+- ORM models, both migrations, Compose, and Dockerfiles have no diff from `5ddbca3`; no revision
+  0003, schema change, runtime dependency, deployment change, or production configuration appeared.
+- Runtime searches found no auth, Docker socket/SDK, privileged mode, n8n key/integration, cloud AI,
+  remote import, redirect, or server-file response capability. Transfer fetches use only the three
+  fixed relative API paths; the only Transfer href is a temporary validated Blob URL.
+- Compose host ports remain loopback-only. All 139 tracked paths were audited with only the safe
+  `.env.example` present and no tracked environment, database, dependency, build, cache, bytecode,
+  TypeScript-build, credential, or secret artifact.
+- `git diff --check` passed throughout the milestone.
+
+### Commit
+
+- `chore: finalize phase 1c integration`
