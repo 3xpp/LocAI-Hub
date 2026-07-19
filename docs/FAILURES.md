@@ -2,6 +2,7 @@
 
 This is a factual engineering log, not a list of hypothetical risks. It records failures or
 warnings actually observed while building and validating the project, their impact, and their
+resolution or current action.
 
 ## 2026-07-10 — pnpm was not available on PATH
 
@@ -162,3 +163,42 @@ at exact 320, 600, 601, and 1,280 px BiDi viewports.
 **Prevention:** Keep the focused root-width guard and rerun the exact real-browser viewport matrix
 whenever global or Transfer responsive styles change. Static CSS and DOM-bound checks do not replace
 the scrollbar-aware browser assertion.
+
+## 2026-07-19 — Root-invoked pnpm selected the wrong package-manager version
+
+**Status:** Resolved in the implementation plan
+
+**Observed:** Running `pnpm --dir web` from the repository root made Corepack select pnpm 11.9.0
+under Node 20, which failed with `ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite`. Running
+`env --chdir=web pnpm --version` returned the project-pinned pnpm 10.15.1.
+
+**Impact:** Only draft implementation-plan commands were affected. No dependency, manifest, or
+lockfile changed.
+
+**Resolution:** The implementation plan runs pnpm with `web` as the working directory.
+
+**Prevention:** Keep the `packageManager` pin and run pnpm with `web` as the current directory.
+
+## 2026-07-19 — Snap geckodriver rejected a host-created profile root
+
+**Status:** Environment constraint with verified plan workaround
+
+**Observed:** Snap geckodriver exited with status 64 when `--profile-root` pointed at a host-created
+task subdirectory. Using `/tmp` as the profile root succeeded.
+
+**Impact:** This affected only the planned browser-acceptance harness and had no product impact.
+
+**Current action:** Use `/tmp` for one task-owned WebDriver session, capture the returned profile,
+then delete the session and process and verify task-owned cleanup.
+
+## 2026-07-19 — Firefox outer-window sizing could not produce a 320 px viewport
+
+**Status:** Environment constraint with verified plan workaround
+
+**Observed:** Firefox 152 did not honor a requested 320 by 900 px outer window; the observed minimum
+window and viewport were 500 by 814 px.
+
+**Impact:** This affected only the exact-size browser-acceptance method, not product behavior.
+
+**Current action:** Use a borderless exact-size iframe and assert its real `innerWidth` and
+`innerHeight`, covering widths from 320 through 1,280 px and the 1,080/1,081 px responsive edges.

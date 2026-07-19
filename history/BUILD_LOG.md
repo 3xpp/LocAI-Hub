@@ -1998,3 +1998,37 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 2a n8n health design`
+
+## 2026-07-19 — Phase 2A implementation plan
+
+### Milestone
+
+- Converted the approved Phase 2A design into a detailed test-driven implementation plan with
+  planned commits 0–8 and exact file, command, and ownership boundaries for every task.
+- Kept this documentation-only milestone free of product code, database schema changes, dependency
+  changes, `.env` access, n8n API keys, and application Docker capability.
+- Planned commit: `docs: add phase 2a implementation plan`.
+
+### Independent audits and corrections
+
+- Completed independent backend, frontend, and acceptance audits, then incorporated their findings
+  into the plan.
+- Added a canonical-response guard, per-request settings, isolated requests, and explicit cookie and
+  body privacy requirements for the backend implementation.
+- Specified StrictMode request coalescing, Firefox-safe focus through `aria-disabled`, distinct
+  first-error and stale live regions, and the 1,080 px responsive breakpoint.
+- Made frontend commands root-stable with `env --chdir=web pnpm` and required explicit safe n8n
+  values for every Compose path.
+- Defined a high-entropy fail-safe supervisor, task-owned sentinel logs, the Snap geckodriver `/tmp`
+  workaround, and closed FIFO coordination for browser state changes.
+- Required exact iframe viewport checks at 320, 600, 601, 880, 881, 1,024, 1,080, 1,081, and
+  1,280 px, plus the exact 2,048-character origin boundary.
+
+### Review and validation
+
+- Recorded only the three newly observed tooling constraints in `docs/FAILURES.md`.
+- Required Markdown self-review plus staged whitespace and scope checks before committing the plan.
+
+### Commit
+
+- `docs: add phase 2a implementation plan`
