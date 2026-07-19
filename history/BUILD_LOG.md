@@ -1960,3 +1960,41 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: record phase 1c acceptance validation`
+
+## 2026-07-19 — Approved Phase 2A n8n health observation design
+
+### Milestone
+
+- Completed design-first brainstorming for the first Phase 2 milestone and decomposed later
+  credentialed n8n inventory and Docker container visibility into separately approved phases.
+- Approved one optional, credential-free n8n origin configured only through `N8N_BASE_URL`, with
+  unconfigured, online, degraded, and offline states.
+- Approved manual observation on Integrations entry and explicit refresh only, one strict Hub API
+  response, fixed default n8n liveness/readiness paths, and a fifth responsive dashboard view.
+- Based the endpoint semantics on n8n's official Monitoring documentation and recorded the custom
+  health-path limitation.
+- Wrote the complete design in
+  `docs/superpowers/specs/2026-07-19-phase-2a-n8n-health-design.md`.
+- Kept the milestone free of implementation code, schema changes, runtime dependencies, API keys,
+  Docker access, provider mutation, public binding, and production configuration.
+
+### Independent audit and self-review
+
+- Completed a full independent audit of the 835-line design and resolved both blocking findings.
+- Replaced a shared HTTP client with isolated one-request clients, added a hard per-request deadline,
+  and required proof that a sensitive liveness cookie can never reach readiness or Hub output.
+- Corrected the Compose safety contract: `--env-file /dev/null` does not override exported shell
+  variables, so every Compose path must supply an explicit safe n8n value and the Makefile is in
+  implementation scope.
+- Clarified canonical-origin bounds, custom n8n health paths, response content-type neutrality,
+  re-entry snapshot behavior, pending-refresh supersession, and the five-button responsive layout.
+- Verified the spec has no unresolved TODO, TBD, FIXME, placeholder question, or superseded shared-
+  client/Compose wording.
+- Kept `docs/FAILURES.md` unchanged because the only tooling limitation encountered is already
+  documented there; no new product or implementation incident occurred.
+- No application tests were required for this documentation-only milestone. The staged whitespace,
+  scope, and clean-status checks are recorded by the resulting commit.
+
+### Commit
+
+- `docs: add phase 2a n8n health design`
