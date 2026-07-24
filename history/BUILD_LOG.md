@@ -2165,3 +2165,42 @@ This journal records what is built, why it changes, and how each milestone is ve
 - Frontend ESLint and strict TypeScript checking passed.
 - The Vite production build passed with 56 modules transformed.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 4 abortable integrations observation controller
+
+### Milestone
+
+- Added an integrations observation controller that remains idle while disabled and performs one
+  n8n status request on view entry.
+- Added explicit loading and background-refresh states while preserving the last valid observation
+  and checked time across view exit and re-entry.
+- Added request ownership with `AbortController` and monotonically increasing generations so
+  refreshes supersede pending work and late settlements cannot publish stale state.
+- Added fixed Hub-failure and stale-snapshot messages without forwarding raw backend or provider
+  details.
+- Coalesced React StrictMode effect replay with a cancellable microtask while adding no polling,
+  retry timers, visibility listeners, storage, provider requests, or dependencies.
+
+### Test-first and lifecycle evidence
+
+- The initial focused run stopped during collection with the expected unresolved
+  `./useIntegrations` import because the controller module did not exist.
+- The final focused suite passed all 14 controller tests.
+- Tests prove disabled views create zero requests, one entry creates exactly one request, advancing
+  timers creates no polling or retry, and StrictMode replay still creates one entry request.
+- Race tests prove programmatic refresh aborts and supersedes pending work, leaving and unmounting
+  abort active work, and a prior entry's late settlement cannot replace a successful re-entry
+  result or checked time.
+- Snapshot tests prove checked time remains null while the first request is pending, changes only
+  after a valid settlement, remains stable during refresh, and is retained with the prior
+  observation after a failed re-entry refresh.
+- Rejection tests prove first Hub failures use fixed safe copy, stale refresh failures keep the
+  snapshot with separate fixed copy, and body-decoding `AbortError` settlements publish no failure
+  or private detail.
+
+### Validation
+
+- `make test-web` passed all 369 frontend tests across 19 files.
+- Frontend ESLint and strict TypeScript checking passed.
+- The Vite production build passed with 56 modules transformed.
+- `git diff --check` passed.
