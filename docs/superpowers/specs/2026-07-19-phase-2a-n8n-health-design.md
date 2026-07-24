@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-19
 
-**Status:** Approved; implementation not started
+**Status:** Implemented; final acceptance pending
 
 **Sequence:** Phase 2A after Phase 1A Prompt Registry, Phase 1B Workflow Links, and Phase 1C
 Import/Export
@@ -805,7 +805,10 @@ Phase 2A is complete only when all statements are true:
 12. The n8n origin is inert text and is never requested by browser code.
 13. The five-view navigation and Integrations view remain accessible and overflow-free at the exact
     approved widths.
-14. Tests and acceptance require no real n8n, API key, Docker access, or internet connection.
+14. Application code, application containers, unit tests, frontend tests, and the n8n health matrix
+    require no real n8n, API key, Docker access, or internet connection. Only the explicitly
+    isolated operator-side Compose acceptance requires a local Docker Engine; the application
+    receives no Docker socket, SDK, Engine API, or CLI access.
 15. No schema, runtime dependency, provider mutation, generic target, public binding, auth, or
     production configuration is added.
 16. Every Compose command supplies explicit safe n8n configuration; Compose forwards only the

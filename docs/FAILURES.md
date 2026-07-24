@@ -233,3 +233,29 @@ mismatch families now fail closed at the backend; the browser contract independe
 IPv4-embedded IPv6 in dotted and pure-hex forms, canonical and ambiguous numeric IPv4 forms,
 numeric final labels, nonnumeric domains, port boundaries, trailing-dot hosts, percent-encoded host
 labels, and raw special host characters.
+
+## 2026-07-24 — Phase 2A Compose verifier used nonportable host assumptions
+
+**Status:** Resolved
+
+**Observed:** Three disposable Task 7 verifier runs stopped before the online n8n contract check.
+The first missed correct lowercase privacy headers, the second stopped after Docker created a
+sentinel container but before the startup step completed, and the third sentinel exited with
+status 2 because its bind-mounted script was unreadable. Every failed run completed its trap,
+preserved all preexisting Docker object IDs, removed its exact task resources, freed its ports, and
+left Git unchanged.
+
+**Cause:** The temporary verifier relied on GNU awk's `IGNORECASE`, treated Bash `read` at the
+newline-less end of a Docker cidfile as success under `errexit`, and created the synthetic sentinel
+script with mode `0600` under `umask 077`, which this Docker user namespace could not read through
+the bind mount.
+
+**Resolution:** Normalize header names with awk `tolower()`, load the whole cidfile with command
+substitution and assert that the ID is nonempty, and set only the generated sentinel script to mode
+`0444` while retaining the private `0700` task root and read-only container mount. A fresh run then
+passed the complete unconfigured and online direct/proxied contract, privacy, route-smoke, and
+cleanup checks.
+
+**Prevention:** Keep acceptance helpers portable across POSIX awk implementations, treat Docker
+cidfiles as newline-agnostic, and set explicit least-privilege modes for task files consumed through
+user-namespaced bind mounts. Never reuse partial evidence from a failed disposable run.

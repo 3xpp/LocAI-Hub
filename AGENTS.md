@@ -14,7 +14,7 @@ Local AI Workflow Hub is a local-first dashboard for observing a developer's loc
 
 - Run backend tests before committing backend changes.
 - Run frontend typecheck before committing frontend changes.
-- Run `make test-web` before committing Prompt, Workflow Links, or Transfer UI behavior changes.
+- Run `make test-web` before committing Prompt, Workflow Links, Transfer, or Integrations UI behavior changes.
 - Run the relevant lint commands for every changed domain.
 - Update history/BUILD_LOG.md in every implementation milestone.
 - Record only failures actually observed in docs/FAILURES.md; never invent incidents.
@@ -26,9 +26,16 @@ Ask before:
 - adding any new runtime dependency;
 - changing the database schema after the initial Phase 0 schema;
 - touching authentication or authorization;
-- adding Docker socket access or Docker SDK usage;
-- using n8n API keys or adding n8n API integration;
+- adding application Docker socket, SDK, Engine API, CLI access, container inventory, or control;
+- adding `N8N_API_KEY`, authentication, credentialed n8n API calls, workflow/execution/inventory
+  access, provider mutations, generic or request-controlled targets, custom health paths, or
+  background polling;
 - changing deployment or production configuration.
+
+Maintenance strictly inside the approved Phase 2A design may use the existing credential-free,
+fixed-path n8n health client. This exception does not approve any broader provider capability.
+The explicitly isolated operator-side Compose acceptance may use a local Docker Engine, but the
+application and its containers must never receive Docker access.
 
 ## Safety
 

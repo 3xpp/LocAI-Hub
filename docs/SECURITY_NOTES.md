@@ -1,22 +1,24 @@
 # Security Notes
 
-## Phase 1C security posture
+## Phase 2A security posture
 
-Local AI Workflow Hub is an unauthenticated, local development dashboard. Phase 1C is designed for
-one trusted operator on one machine. It is not a public service, remote administration plane, or
-production deployment profile. The Prompt and Workflow Links registries add local data read,
-create, update, copy/open, permanent-delete, and full-registry transfer capabilities; that increases
-the impact of unintended network access and downloaded-file disclosure.
+Local AI Workflow Hub is an unauthenticated, local development dashboard designed for one trusted
+operator on one machine. It is not a public service, remote administration plane, or production
+deployment profile. The Prompt and Workflow Links registries expose local data operations and
+full-registry transfer; Phase 2A also exposes one configured n8n origin and normalized health. Those
+capabilities increase the impact of unintended network access, downloaded-file disclosure, and
+private-topology disclosure.
 
 > Do not expose the dashboard or API publicly without authentication, authorization, TLS, network policy, audit logging, and a dedicated threat model.
 
 Loopback host bindings reduce accidental exposure; they are not a substitute for the missing controls.
 
-## Explicit Phase 1C boundaries
+## Explicit Phase 2A boundaries
 
 - **No Docker socket access:** Neither the application nor Compose mounts /var/run/docker.sock. There is no Docker SDK or container-control API.
-- **No n8n API key usage:** Phase 1C does not read N8N_API_KEY, call n8n, discover remote workflows,
-  or mutate n8n workflows. An `n8n` tag is only operator-authored text.
+- **No n8n API key usage:** Phase 2A does not define or read N8N_API_KEY, discover workflows or
+  executions, or mutate n8n. It performs only credential-free GET observations against two fixed
+  health paths. An `n8n` tag remains operator-authored text and is never probed.
 - **No service-administration actions:** There are no container restart buttons, arbitrary scripts,
   shell execution, Ollama pull/delete controls, or remote workflow mutation. Prompt and Workflow
   Link CRUD are limited to the Hub's local SQLite registry.
@@ -34,6 +36,9 @@ Adding any of these capabilities requires explicit approval and separate authent
 - Docker Compose may load .env through normal Compose behavior. Treat rendered Compose configuration and container inspection as potentially sensitive when environment values exist.
 - The committed .env.example contains safe local examples only.
 - Do not put credentials in OLLAMA_BASE_URL. The client rejects user information, query strings, fragments, and non-root URL paths.
+- Do not put credentials in N8N_BASE_URL. Missing or exact-empty configuration is safest and makes no
+  request; configured values must be a credential-free HTTP(S) root origin and are canonicalized
+  after validation.
 - Do not put credentials, signed tokens, or other secrets in a saved workflow URL. Workflow-link
   user information is rejected, but allowed query strings and fragments are deliberately preserved
   and are not inspected for secrets.
@@ -82,8 +87,8 @@ Prompt data lives in SQLite:
 
 - non-Docker development uses an ignored database below backend/ by default;
 - Compose stores the database in the hub-data named volume;
-- docker compose down retains that volume;
-- docker compose down --volumes deliberately deletes it.
+- an ordinary Compose teardown retains that volume;
+- adding the explicit `--volumes` teardown option deliberately deletes it.
 
 Prompt deletion is a hard delete with a confirmation dialog and no application-level undo, archive, or
 restore. SQLite pages, filesystem snapshots, volume backups, clipboard history, and exported bundles
@@ -150,12 +155,45 @@ retention of a bundle.
   local IDs and timestamps. Version 1 transfer is not backup, restore, synchronization, merge,
   deduplication, or secure deletion.
 
+## Phase 2A n8n health boundary
+
+Phase 2A creates one narrow SSRF-relevant outbound surface: the backend can contact one n8n origin
+selected only through startup process configuration. An API caller cannot provide or override the
+target, method, path, timeout, headers, redirect policy, or TLS policy. The client validates a
+credential-free HTTP(S) root origin, reconstructs its canonical origin, then sends GET requests only
+to `/healthz` and, after liveness passes, `/healthz/readiness`.
+
+Localhost, loopback, private addresses, and homelab DNS names are intentionally accepted because
+private topology is the product's local use case. The strict response reveals the canonical origin
+and normalized availability to any client that can reach the unauthenticated Hub. That information
+can expose internal naming, addressing, and service state, so localhost binding is part of the
+Phase 2A boundary.
+
+- There is no authorization or provider credential, and no browser cookie or operator header is
+  propagated to n8n.
+- Redirects are rejected, ambient proxy configuration is ignored, normal TLS verification remains
+  enabled, and each fixed check uses an isolated client so provider cookies do not cross checks.
+- Provider response bodies are not read, decoded, logged, stored, or rendered. The browser calls
+  only the Hub's relative integration route and never fetches the provider origin.
+- Configuration, observation state, and checked time are not persisted. Overview makes no n8n
+  request; entering Integrations and explicit Refresh are the only triggers. There is no background
+  polling, automatic retry, generic probe, or saved-link dereference.
+- Exact empty or missing configuration is the safest default and produces an unconfigured state
+  with zero outbound requests.
+
+Do not expose the Hub to another network without authentication, authorization, TLS, restrictive
+network policy, and a new security review of both the local registries and this outbound boundary.
+API keys, workflow/execution inventory, generic targets, custom health paths, provider mutation, and
+Docker capabilities remain explicitly deferred. n8n HTTP health is an application-level observation,
+not authoritative container health.
+
 ## Dependency and build safety
 
 - Backend and frontend dependencies are locked with uv.lock and pnpm-lock.yaml.
 - Docker builds use the frozen locks.
-- `make build` supplies an explicit safe Ollama URL and `/dev/null` Compose env file so build
-  validation does not implicitly interpolate an ignored local `.env` file.
+- `make build` supplies explicit empty n8n configuration, a safe Ollama URL, and `/dev/null` as the
+  Compose env file so build validation does not implicitly interpolate an ignored local `.env`
+  file.
 - Real environment files and local databases are excluded from Docker contexts.
 - Compose does not use privileged mode or the Docker socket.
 - Development images and source mounts are not a production hardening profile.

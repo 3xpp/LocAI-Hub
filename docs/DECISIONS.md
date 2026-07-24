@@ -231,3 +231,22 @@ contracts keeps the format understandable without changing SQLite or adding a ru
 IDs and UTC timestamps and never update or delete existing rows. Local file content stays in browser
 memory for the active flow, with 10 MiB, 5,000-record, and 100-returned-issue bounds. Version 1 is not
 backup, restore, synchronization, merge, deduplication, encryption, signing, or secure deletion.
+
+## 2026-07-24 — Credential-free, fixed-path n8n health observation
+
+**Decision:** Observe at most one provider-specific n8n origin selected through process
+configuration. Validate a credential-free HTTP(S) root origin, reconstruct its canonical origin,
+and issue isolated GET requests to the fixed `/healthz` and `/healthz/readiness` paths. Do not
+follow redirects, inherit ambient proxies, reuse cookies between checks, or consume provider
+response bodies; expose only a strict normalized safe state.
+
+**Why:** One bounded liveness/readiness signal is useful for a local operator while keeping provider
+selection outside the unauthenticated request surface. Strict validation and fixed transport
+behavior make the outbound boundary reviewable without turning the Hub into a generic probe,
+credential broker, or remote administration plane.
+
+**Consequence:** Entering Integrations initiates one observation and explicit Refresh initiates
+another. Browser abort and generation ownership prevent stale results; there is no polling, retry,
+or observation history. Phase 2A adds no schema, persistence, API key, generic target, saved-link
+probe, Docker capability, provider mutation, or production/public exposure. Credentialed n8n
+inventory and container visibility require separate approved designs.

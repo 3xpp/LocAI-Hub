@@ -2292,3 +2292,63 @@ This journal records what is built, why it changes, and how each milestone is ve
 - Frontend ESLint and strict TypeScript checking passed.
 - The Vite production build passed with 60 modules transformed.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 7 safe configuration and documentation foundation
+
+### Milestone
+
+- Added the intentionally blank `N8N_BASE_URL=` example and forwarded it only to the Compose API
+  service; the web service receives no provider origin.
+- Made every tracked Compose command explicit about safe n8n and Ollama values and
+  `--env-file /dev/null`, while preserving the existing two services, loopback host publishing,
+  development volumes, and absence of an n8n service or Docker capability.
+- Updated operator setup, architecture, API-state, observation-lifecycle, topology-disclosure, and
+  fixed-path limitation documentation for the implemented Phase 2A candidate.
+- Recorded the provider-specific credential-free observation decision, the narrow SSRF-relevant
+  security boundary, future-agent approval boundaries, and the distinction between HTTP
+  observation and authoritative container health.
+- Marked the approved design as implemented with final-candidate acceptance pending; credentialed
+  n8n inventory and container visibility remain separately deferred.
+
+### Validation
+
+- The tracked Compose-command audit found five repository-controlled commands outside plans and
+  history; all five explicitly set `N8N_BASE_URL` and `OLLAMA_BASE_URL` and select
+  `--env-file /dev/null`.
+- A synthetic `phase2a-synthetic-marker` dry run printed the Make build recipe beginning with an
+  explicit empty `N8N_BASE_URL=` and did not interpolate the marker.
+- Docker Compose 2.40.3 rendered the empty configuration with exactly API and web services,
+  `N8N_BASE_URL: ""` only in the API environment, both published host ports on `127.0.0.1`, and no
+  privileged or Docker-socket capability.
+- The synthetic `http://n8n-sentinel:5678` render placed that exact origin only in the API
+  environment; the web environment remained free of `N8N_BASE_URL`.
+- `make install` passed with uv 0.11.7 and the web-pinned pnpm 10.15.1 on Node 20.20.2. Formatting
+  was stable across 60 files.
+- `make test` passed all 585 backend tests and `make test-e2e` passed all 164 end-to-end tests with
+  the already documented TestClient warning. `make test-web` passed all 394 frontend tests across
+  20 files.
+- Ruff, ESLint, mypy across 36 backend source files, strict TypeScript checking, and
+  `git diff --check` passed. Vite 7.3.6 built 60 modules, and both Compose images built with Docker
+  29.1.3 and Compose 2.40.3.
+- A disposable migration lifecycle passed upgrade to head, `alembic check`, downgrade to 0001,
+  re-upgrade to head, and downgrade to base. Exactly revisions 0001 and 0002 remained, with hashes
+  `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5` and
+  `03b30ecf269a7fb716058c477f33acfde1ba4be3a2bca2c0b21072675f3a7407`.
+- The isolated Compose run passed exact unconfigured direct and proxied responses with zero
+  provider requests, then exact online direct and proxied responses. The sentinel observed exactly
+  four ordered requests: `GET /healthz`, `GET /healthz/readiness`, repeated once; all four were
+  cookie-free, including both readiness requests.
+- All four Hub observations returned the no-store, no-cache, and nosniff privacy headers. Synthetic
+  body and cookie markers were absent from Hub JSON and API/web logs. Six direct and six proxied
+  Phase 1 route smokes passed, and the application retained no Docker access.
+- The intentional-failure cleanup exercise and every diagnostic/final run preserved all preexisting
+  container, network, and volume IDs. The successful run removed its exact sentinel, two-service
+  project, network, volumes, files, listeners, and task root; Git remained byte-identical.
+- Three verifier-only portability incidents were observed and resolved before the fresh passing
+  run: mawk required explicit `tolower()` header matching, Docker cidfiles required
+  newline-agnostic command substitution, and the synthetic read-only sentinel source required mode
+  `0444` for this Docker user namespace. The private root remained mode `0700`; details are recorded
+  in `docs/FAILURES.md`.
+- No dependency, manifest, lockfile, schema, Dockerfile, Vite-config, n8n service, key, provider
+  mutation, public binding, or production configuration changed, and no real environment file was
+  opened. Final exact-candidate acceptance remains Task 8.

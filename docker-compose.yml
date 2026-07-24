@@ -12,6 +12,7 @@ services:
         exec uv run fastapi dev src/local_ai_hub/api/main.py --host 0.0.0.0
     environment:
       DATABASE_URL: sqlite:////data/local-ai-hub.db
+      N8N_BASE_URL: ${N8N_BASE_URL:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       PYTHONPATH: /app/src
     extra_hosts:
