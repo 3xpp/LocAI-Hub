@@ -2204,3 +2204,48 @@ This journal records what is built, why it changes, and how each milestone is ve
 - Frontend ESLint and strict TypeScript checking passed.
 - The Vite production build passed with 56 modules transformed.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 5 accessible n8n integrations status view
+
+### Milestone
+
+- Added a normalized n8n status card for unconfigured, online, degraded, offline, and invalid
+  configuration observations with separate state explanation, sanitized error, and fixed liveness
+  and readiness telemetry.
+- Added the read-only Integrations view shell, explicit credential-free safety boundary, guarded
+  manual refresh control, last-checked presentation, initial loading, first-failure, and stale
+  snapshot states.
+- Kept configured origins as wrapping inert text with no link, clipboard, setup, credential, input,
+  provider, or destination action derived from them.
+- Added scoped industrial control-room styling with a teal integration frame, state-specific
+  green/amber/red/neutral signals, bounded single-column content, three-cell telemetry, visible
+  focus, and reduced-motion-compatible loading treatment.
+- Kept the milestone free of dependencies, fonts, images, UI libraries, polling, browser storage,
+  focus-stealing effects, provider requests, and provider mutation.
+
+### Test-first, accessibility, and privacy evidence
+
+- The initial focused run stopped during collection with the expected unresolved
+  `./IntegrationsView` import because the view and card modules did not exist.
+- A focused semantic regression then failed against the planned unchecked-time markup because
+  `Not yet` was inside a `<time>` without a valid machine-readable datetime. The null state now uses
+  plain text, while completed checks use `<time datetime="<ISO timestamp>">`.
+- The final focused suite passed all 14 Integrations view tests.
+- Tests cover initial loading, unconfigured guidance, all normalized provider states, safe invalid
+  configuration presentation, first Hub failure, stale refresh failure, fixed check explanations,
+  separate sanitized errors, and a 2,048-character wrapping origin.
+- Accessibility tests prove refresh remains focusable under `aria-disabled`, pending mouse and
+  keyboard activations are ignored, refresh and announcements never steal focus, first failures
+  remain assertive, and stale failures remain polite.
+- Repeated-event tests prove same-state successful observations use changed checked-time ownership
+  and identical stale failures after another refresh attempt replace a sequence-keyed child inside
+  the one stable polite live region, forcing a DOM mutation without timers.
+- Privacy tests prove origins remain plain text and create no `href`, input, password field,
+  clipboard action, destination `data-*` value, or provider-derived accessible label.
+
+### Validation
+
+- `make test-web` passed all 383 frontend tests across 20 files.
+- Frontend ESLint and strict TypeScript checking passed.
+- The Vite production build passed with 56 modules transformed.
+- `git diff --check` passed.
