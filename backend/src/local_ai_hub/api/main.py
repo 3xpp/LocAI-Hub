@@ -9,7 +9,14 @@ from fastapi.responses import JSONResponse
 
 from local_ai_hub import __version__
 from local_ai_hub.api.access_logs import install_safe_access_log_filter
-from local_ai_hub.api.routes import health, ollama, prompts, transfer, workflow_links
+from local_ai_hub.api.routes import (
+    health,
+    integrations,
+    ollama,
+    prompts,
+    transfer,
+    workflow_links,
+)
 
 
 @asynccontextmanager
@@ -51,6 +58,7 @@ async def sanitized_validation_error(
 app.include_router(transfer.router, prefix="/api/transfer")
 
 app.include_router(health.router)
+app.include_router(integrations.router, prefix="/api/integrations")
 app.include_router(ollama.router, prefix="/api/ollama")
 app.include_router(prompts.router, prefix="/api/prompts")
 app.include_router(workflow_links.router, prefix="/api/workflow-links")

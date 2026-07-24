@@ -2071,3 +2071,40 @@ This journal records what is built, why it changes, and how each milestone is ve
 - `make test` passed all 527 backend tests in 3.47 seconds with the one previously documented
   Starlette TestClient deprecation warning.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 2 strict integration status API
+
+### Milestone
+
+- Added a strict, extra-forbidding n8n status response schema that accepts only the approved
+  unconfigured, online, degraded, offline, and invalid-configuration combinations.
+- Added a FastAPI dependency factory and the credential-free, read-only
+  `GET /api/integrations/n8n/status` route while preserving all existing routers and the shared
+  validation-error handler.
+- Added fixed `Cache-Control: no-store`, `Pragma: no-cache`, and
+  `X-Content-Type-Options: nosniff` response headers without adding content-disposition metadata.
+- Kept the milestone free of dependencies, database changes, `.env` access, API keys, real n8n
+  requests, provider mutation, and exception-to-offline conversion.
+
+### Test-first and privacy evidence
+
+- The initial focused run stopped during collection with the expected missing
+  `integration_schemas` module and `get_n8n_health_client` import errors.
+- The final focused command passed all 30 schema and integration API tests in 0.44 seconds.
+- The tests cover every approved response combination and reject extra fields, impossible state
+  combinations, noncanonical origins, credentials, paths, query strings, fragments, empty origins,
+  and origins beyond the 2,048-character bound.
+- Route tests prove normalized payloads and privacy headers, ensure an invalid configured value is
+  never reflected or used to create a transport, preserve an existing dependency-override
+  identity, and leave unexpected programming errors as sanitized Hub HTTP 500 failures.
+
+### Validation
+
+- Scoped Ruff passed all six changed Python paths.
+- Strict mypy passed all 36 source files.
+- Ruff format check reported all 60 Python files already formatted after applying its import-order
+  and line-wrap corrections to the new files.
+- `make test` passed all 557 backend tests in 2.68 seconds with the one previously documented
+  Starlette TestClient deprecation warning.
+- `make test-e2e` passed all 164 e2e tests in 2.18 seconds with the same documented warning.
+- `git diff --check` passed.
