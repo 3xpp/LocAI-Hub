@@ -2032,3 +2032,42 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 2a implementation plan`
+
+## 2026-07-24 — Phase 2A Task 1 n8n health observation client
+
+### Milestone
+
+- Added process-only `N8N_BASE_URL` configuration with exact missing/empty handling and a
+  representation-safe field that does not expose a configured value.
+- Added a credential-free, read-only n8n health client with canonical HTTP(S) root-origin
+  validation, a 2,048-character defensive bound, fixed liveness/readiness paths, and normalized
+  unconfigured, online, degraded, and offline results.
+- Kept the milestone free of dependencies, schema changes, `.env` access, API keys, provider
+  mutation, redirects, response-body reads, and real n8n requests.
+
+### Test-first evidence
+
+- The initial focused run stopped during collection with the expected
+  `ModuleNotFoundError: local_ai_hub.services.n8n`; no implementation existed at that point.
+- The final focused command passed all 45 configuration and n8n client tests in 0.12 seconds.
+- The tests prove that unconfigured and invalid origins create zero transports, accepted origins
+  are canonicalized, invalid raw values are never reflected, and only exact HTTP 200 responses
+  pass.
+- The tests also prove that liveness and readiness use two fresh clients, a liveness cookie is not
+  forwarded, redirects remain disabled, process proxy settings are ignored, TLS verification stays
+  enabled, every timeout phase uses the configured bound, and provider headers and bodies do not
+  affect or enter the result.
+- Transport failures and hard wall-clock timeouts return fixed safe errors; readiness failures
+  degrade without exposing provider details.
+
+### Validation
+
+- Focused Ruff passed all four changed Python paths.
+- Strict mypy passed all 34 source files. Its first run identified that the plan's Boolean alias did
+  not narrow `str | None`; an equivalent explicit branch resolved the typing issue without changing
+  behavior.
+- The first Ruff format check identified the two new n8n files, Ruff formatted them, and the final
+  check reported all 56 Python files already formatted.
+- `make test` passed all 527 backend tests in 3.47 seconds with the one previously documented
+  Starlette TestClient deprecation warning.
+- `git diff --check` passed.
