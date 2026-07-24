@@ -11,6 +11,8 @@ import {
 import { HealthCard } from './components/HealthCard'
 import { ModelList } from './components/ModelList'
 import { OllamaStatusCard } from './components/OllamaStatusCard'
+import { IntegrationsView } from './features/integrations/IntegrationsView'
+import { useIntegrations } from './features/integrations/useIntegrations'
 import { PromptRegistry } from './features/prompts/PromptRegistry'
 import { usePromptRegistry } from './features/prompts/usePromptRegistry'
 import { TransferView } from './features/transfer/TransferView'
@@ -36,7 +38,12 @@ const messageFrom = (error: unknown) =>
 const wasAborted = (error: unknown, signal: AbortSignal) =>
   signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
 
-type ActiveView = 'overview' | 'prompts' | 'workflows' | 'transfer'
+type ActiveView =
+  | 'overview'
+  | 'prompts'
+  | 'workflows'
+  | 'transfer'
+  | 'integrations'
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('overview')
@@ -48,6 +55,7 @@ export default function App() {
   const promptRegistry = usePromptRegistry(activeView === 'prompts')
   const workflowRegistry = useWorkflowRegistry(activeView === 'workflows')
   const transfer = useTransfer(activeView === 'transfer')
+  const integrations = useIntegrations(activeView === 'integrations')
 
   const refresh = useCallback(async () => {
     activeRequest.current?.abort()
@@ -151,6 +159,15 @@ export default function App() {
             >
               Transfer
             </button>
+            <button
+              type="button"
+              aria-current={
+                activeView === 'integrations' ? 'page' : undefined
+              }
+              onClick={() => navigateTo('integrations')}
+            >
+              Integrations
+            </button>
           </nav>
           <p className="node-label">
             <span aria-hidden="true" /> Local node / private
@@ -213,8 +230,10 @@ export default function App() {
         <PromptRegistry controller={promptRegistry} />
       ) : activeView === 'workflows' ? (
         <WorkflowRegistry controller={workflowRegistry} />
-      ) : (
+      ) : activeView === 'transfer' ? (
         <TransferView controller={transfer} />
+      ) : (
+        <IntegrationsView controller={integrations} />
       )}
     </main>
   )

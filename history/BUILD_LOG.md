@@ -2249,3 +2249,46 @@ This journal records what is built, why it changes, and how each milestone is ve
 - Frontend ESLint and strict TypeScript checking passed.
 - The Vite production build passed with 56 modules transformed.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 6 fifth dashboard view
+
+### Milestone
+
+- Integrated one app-level Integrations controller and view through the existing guarded masthead
+  navigator, with Integrations as the fifth full-label destination.
+- Kept Overview free of n8n requests and limited automatic observations to Integrations entry, with
+  one request per entry even under React StrictMode effect replay.
+- Preserved Prompt, Workflow Link, and Transfer discard and pending-operation guards when
+  Integrations is the requested destination; leaving Integrations itself adds no confirmation
+  boundary.
+- Preserved request ownership across navigation: leaving Integrations aborts its active signal,
+  re-entry starts one fresh observation, and a late settlement from the earlier entry cannot replace
+  the newer visible card.
+- Reworked the masthead navigation into an exact five-column base and 1080 px tablet grid, then an
+  exact six-track mobile grid with Overview, Prompts, and Workflows spanning two tracks and Transfer
+  and Integrations spanning three.
+- Stacked the Integrations safety boundary, toolbar, telemetry, and refresh action at 600 px while
+  keeping all five navigation labels visible, wrapping, and in normal document flow.
+
+### Test-first and responsive evidence
+
+- The initial focused red run reported 15 expected failures: App had no Integrations destination,
+  the base navigation still had four flex items, the 1080 px slice did not exist, and the mobile
+  layout still declared four columns.
+- The final focused navigation and stylesheet run passed all 29 tests.
+- Navigation tests prove zero n8n requests on initial Overview, exactly one observation per
+  Integrations entry, sole `aria-current="page"` ownership, signal abortion on leave, and newer
+  snapshot ownership after an explicitly awaited late settlement.
+- Guard tests retain the prior destinations while proving dirty editors, pending Workflow Link
+  mutations, and pending or prepared Transfer operations block Integrations and start zero n8n
+  requests.
+- Structural stylesheet tests scope assertions to the ordered 1080, 880, and 600 px media slices;
+  they cover five desktop/tablet columns, the mobile 3+2 arrangement, 44 px controls, shrinkable
+  layout boundaries, visible labels, and the one-column mobile Integrations layout.
+
+### Validation
+
+- `make test-web` passed all 394 frontend tests across 20 files.
+- Frontend ESLint and strict TypeScript checking passed.
+- The Vite production build passed with 60 modules transformed.
+- `git diff --check` passed.

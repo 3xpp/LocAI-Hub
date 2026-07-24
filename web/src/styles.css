@@ -104,23 +104,26 @@ button:focus-visible {
   box-shadow: 0 0 12px rgba(185, 245, 102, 0.75);
 }
 
-.masthead__controls,
-.view-switcher {
+.masthead__controls {
   display: flex;
-  gap: 10px;
+  min-width: 0;
+  gap: 22px;
   align-items: center;
 }
 
-.masthead__controls {
-  gap: 22px;
-}
-
 .view-switcher {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+  gap: 10px;
+  align-items: center;
   border: 1px solid var(--line-soft);
   padding: 3px;
 }
 
 .view-switcher button {
+  min-width: 0;
+  min-height: 44px;
   border: 0;
   padding: 7px 10px 6px;
   color: var(--muted-aa);
@@ -3042,6 +3045,33 @@ h2 {
   }
 }
 
+@media (max-width: 1080px) {
+  .masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px 18px;
+    align-items: center;
+  }
+
+  .masthead__controls {
+    display: contents;
+  }
+
+  .view-switcher {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .node-label {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
 @media (max-width: 880px) {
   .dashboard {
     width: min(100% - 36px, 680px);
@@ -3067,10 +3097,6 @@ h2 {
 
   .status-card {
     min-height: 260px;
-  }
-
-  .masthead__controls {
-    gap: 14px;
   }
 
   .registry-header,
@@ -3131,7 +3157,7 @@ h2 {
     display: grid;
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     width: 100%;
   }
 
@@ -3140,6 +3166,14 @@ h2 {
     min-height: 44px;
     padding: 8px 4px 7px;
     overflow-wrap: anywhere;
+  }
+
+  .view-switcher button:nth-child(-n + 3) {
+    grid-column: span 2;
+  }
+
+  .view-switcher button:nth-child(n + 4) {
+    grid-column: span 3;
   }
 
   .brand-lockup > span:last-child {
@@ -3506,6 +3540,20 @@ h2 {
 
   .transfer-issues li > span:last-child {
     grid-column: 1;
+  }
+
+  .integration-boundary {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .integrations-toolbar,
+  .integration-telemetry {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .integration-refresh {
+    width: 100%;
   }
 }
 
