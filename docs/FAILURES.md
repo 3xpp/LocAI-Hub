@@ -202,3 +202,34 @@ window and viewport were 500 by 814 px.
 
 **Current action:** Use a borderless exact-size iframe and assert its real `innerWidth` and
 `innerHeight`, covering widths from 320 through 1,280 px and the 1,080/1,081 px responsive edges.
+
+## 2026-07-24 — n8n origin normalization disagreed with browser URL semantics
+
+**Status:** Resolved
+
+**Observed:** During the Phase 2A frontend contract review, the backend preserved an expanded IPv6
+literal while the browser compressed it, and the backend accepted scoped IPv6 plus legacy numeric
+IPv4 spellings that the browser rejected or reinterpreted. The frontend parser also accepted an
+explicit port `0`, even though the backend rejects that port. A follow-up parity check found that
+Python 3.13 also serialized IPv4-embedded IPv6 with dotted decimal while the browser serialized the
+same 128-bit address with hexadecimal hextets.
+The final offline parity audit also found that a trailing dot let numeric hosts bypass the backend's
+last-label check: browsers either rewrote those origins as IPv4 or rejected them, while the backend
+preserved the supplied host. That sweep also found percent-encoded and raw special host characters
+that HTTPX preserved or escaped while the browser decoded, reinterpreted, or rejected them.
+
+**Impact:** A backend-produced origin could fail the strict browser contract, and ambiguous numeric
+host spellings could describe a different browser origin than their backend display suggested. The
+issue was confined to uncommitted Phase 2A implementation work; no release or persisted data was
+affected.
+
+**Resolution:** Convert IPv6 literals to a pure-hexadecimal 128-bit representation before applying
+browser-compatible zero-run compression with the Python standard library, reject scoped IPv6 and
+WHATWG-style numeric-host candidates, retain canonical dotted IPv4 and ordinary domains, and reject
+port `0` explicitly at the browser boundary. Trailing-dot hosts and the exact special-character
+mismatch families now fail closed at the backend; the browser contract independently rejects them.
+
+**Prevention:** Keep paired backend/frontend parity regressions for compressed IPv6, scoped IPv6,
+IPv4-embedded IPv6 in dotted and pure-hex forms, canonical and ambiguous numeric IPv4 forms,
+numeric final labels, nonnumeric domains, port boundaries, trailing-dot hosts, percent-encoded host
+labels, and raw special host characters.

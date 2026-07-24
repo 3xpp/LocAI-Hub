@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass
+from ipaddress import AddressValueError, IPv4Address, IPv6Address
 from typing import Final, Literal
 
 import httpx
@@ -30,6 +31,60 @@ def _origin_within_limit(value: str) -> bool:
     return len(value) <= MAX_N8N_BASE_URL_LENGTH
 
 
+def _is_legacy_ipv4_number(value: str) -> bool:
+    if value.startswith(("0x", "0X")):
+        hexadecimal = value[2:]
+        return all(character in "0123456789abcdefABCDEF" for character in hexadecimal)
+    return bool(value) and value.isascii() and value.isdigit()
+
+
+def _compress_pure_hex_ipv6(address: IPv6Address) -> str:
+    hexadecimal = f"{int(address):032x}"
+    hextets = [hexadecimal[index : index + 4].lstrip("0") or "0" for index in range(0, 32, 4)]
+
+    best_start = -1
+    best_length = 0
+    current_start = -1
+    for index, hextet in enumerate([*hextets, "end"]):
+        if hextet == "0":
+            if current_start == -1:
+                current_start = index
+            continue
+        if current_start != -1:
+            current_length = index - current_start
+            if current_length > best_length:
+                best_start = current_start
+                best_length = current_length
+            current_start = -1
+
+    if best_length < 2:
+        return ":".join(hextets)
+
+    left = ":".join(hextets[:best_start])
+    right = ":".join(hextets[best_start + best_length :])
+    return f"{left}::{right}"
+
+
+def _normalize_host(host: str) -> str | None:
+    if host.endswith(".") or any(marker in host for marker in ("%", "\\", "^", "|")):
+        return None
+
+    if ":" in host:
+        try:
+            return _compress_pure_hex_ipv6(IPv6Address(host))
+        except AddressValueError:
+            return None
+
+    try:
+        ipv4 = IPv4Address(host)
+    except AddressValueError:
+        if _is_legacy_ipv4_number(host.rsplit(".", maxsplit=1)[-1]):
+            return None
+        return host
+    canonical_ipv4 = str(ipv4)
+    return canonical_ipv4 if host == canonical_ipv4 else None
+
+
 def _normalize_base_url(base_url: str) -> str | None:
     """Return a canonical credential-free HTTP(S) root origin."""
 
@@ -43,12 +98,13 @@ def _normalize_base_url(base_url: str) -> str | None:
     try:
         parsed = httpx.URL(base_url)
         port = parsed.port
+        host = _normalize_host(parsed.host)
     except (httpx.InvalidURL, UnicodeError, ValueError):
         return None
 
     if (
         parsed.scheme not in {"http", "https"}
-        or not parsed.host
+        or not host
         or parsed.userinfo
         or parsed.query
         or parsed.fragment
@@ -61,7 +117,7 @@ def _normalize_base_url(base_url: str) -> str | None:
         canonical = str(
             httpx.URL(
                 scheme=parsed.scheme,
-                host=parsed.host,
+                host=host,
                 port=port,
             )
         ).removesuffix("/")

@@ -2108,3 +2108,60 @@ This journal records what is built, why it changes, and how each milestone is ve
   Starlette TestClient deprecation warning.
 - `make test-e2e` passed all 164 e2e tests in 2.18 seconds with the same documented warning.
 - `git diff --check` passed.
+
+## 2026-07-24 — Phase 2A Task 3 strict frontend n8n observation contract
+
+### Milestone
+
+- Added a closed, discriminated frontend contract for the approved unconfigured, online, degraded,
+  offline, and invalid-configuration n8n observation states.
+- Added an exact runtime parser that rejects extra keys, impossible state combinations, free-form
+  provider errors, credentials, paths, queries, fragments, noncanonical origins, explicit port `0`,
+  and origins beyond the 2,048-character boundary.
+- Added a single relative Hub request to `GET /api/integrations/n8n/status` with optional
+  `AbortSignal` forwarding; the browser never requests the returned provider origin.
+- Corrected the shared backend/browser origin boundary with standard-library, pure-hexadecimal
+  128-bit IPv6 compression and fail-closed handling for scoped IPv6 and browser-ambiguous numeric
+  IPv4 spellings.
+- Kept the milestone free of dependencies, provider requests, persistence, `.env` access, API keys,
+  and changes outside the frontend contract plus its bounded backend compatibility correction.
+
+### Test-first and privacy evidence
+
+- The initial focused run stopped during collection with the expected unresolved
+  `./integrations` import because the implementation module did not exist.
+- Cross-boundary review then reproduced five backend failures: expanded IPv6 was not compressed,
+  and scoped IPv6 plus shorthand, integer, and hexadecimal numeric hosts created transports. The
+  frontend parity test separately proved that explicit port `0` was accepted.
+- A follow-up red run proved that numeric final DNS labels also required fail-closed handling while
+  nonnumeric hexadecimal-looking domains remained valid.
+- A final paired regression reproduced Python 3.13 serializing both dotted and pure-hex
+  IPv4-embedded IPv6 inputs with dotted decimal, which disagreed with the browser's pure-hex origin.
+- The final offline parity audit found that trailing dots bypassed numeric-host detection; paired
+  regressions now reject trailing-dot domains and numeric spellings at both trust boundaries. The
+  same sweep found percent-encoded and raw special-character host mismatches; those exact families
+  also fail closed with paired regressions.
+- The final focused commands passed all 69 n8n client tests and all 62 Integrations API tests.
+- The tests accept every normalized state and reject malformed payloads, extra fields, impossible
+  combinations, noncanonical or overlong origins, scoped IPv6, ambiguous numeric IPv4 forms,
+  numeric final labels, port `0`, and backend-provided free-form errors.
+- Paired regressions prove expanded and IPv4-embedded IPv6 become browser-compatible pure-hex
+  compressed IPv6, canonical dotted IPv4 and ordinary domains remain valid, and backend output
+  satisfies exact browser-origin equality.
+- A bounded offline audit exercised 10,585 raw URL cases across IPv6 zero runs, embedded IPv4,
+  numeric spellings, trailing dots, IDNA, special characters, random registry names, and port
+  boundaries. All 7,494 backend-accepted outputs matched browser origin parsing with zero
+  recanonicalizations, rejections, or uncaught exceptions.
+- The tests prove the request uses only `/api/integrations/n8n/status`, forwards the supplied abort
+  signal, preserves fixed HTTP/network/JSON/abort behavior, and never fetches the provider origin.
+
+### Validation
+
+- `make test` passed all 585 backend tests with the previously documented TestClient warning.
+- Scoped backend Ruff, strict mypy across 36 source files, and Ruff format checks passed.
+- The first `make test-web` invocation used the `web` directory instead of the repository root and
+  therefore found no Make target; the corrected root invocation passed all 355 tests across 18
+  files.
+- Frontend ESLint and strict TypeScript checking passed.
+- The Vite production build passed with 56 modules transformed.
+- `git diff --check` passed.
