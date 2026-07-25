@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-19
 
-**Status:** Implemented; final acceptance pending
+**Status:** Implemented and accepted
 
 **Sequence:** Phase 2A after Phase 1A Prompt Registry, Phase 1B Workflow Links, and Phase 1C
 Import/Export
@@ -14,6 +14,11 @@ React and browser APIs.
 
 **Credential impact:** None. Phase 2A neither defines nor reads `N8N_API_KEY` and sends no
 authorization header.
+
+**Acceptance:** Exact candidate `55de3113dfb358640d50b36b3a549a2cbb29e8a8` passed the complete
+fresh Task 8 matrix on 2026-07-26. The candidate had already been pushed at the operator's explicit
+request, an authorized deviation from criterion 20's default no-push workflow boundary; the
+acceptance run itself performed no fetch, push, or remote mutation.
 
 ## Summary
 
@@ -392,8 +397,8 @@ group may force horizontal overflow. At 600 px and below, the five buttons use a
 - every target remains at least 44 px high;
 - labels may wrap safely without forcing root width.
 
-Exact-browser acceptance covers 320, 600, 601, 880, and 1,280 px widths, including the single
-five-button row at every width above 600 px.
+Exact-browser acceptance covers 320, 600, 601, 880, 881, 1,024, 1,080, 1,081, and 1,280 px widths,
+including the single five-button row at every width above 600 px.
 
 ### API boundary
 
@@ -678,7 +683,7 @@ Acceptance verifies:
 - Compose rendering and build commands explicitly override a harmless ambient n8n marker;
 - Compose can reach an explicit safe host sentinel without bundling n8n;
 - Firefox covers view entry, manual refresh, navigation abort, all display states, live regions, and
-  exact 320/600/601/880/1,280 px layouts;
+  exact 320/600/601/880/881/1,024/1,080/1,081/1,280 px layouts;
 - no browser storage, service worker, provider-origin browser request, or automatic retry appears;
 - all task-owned processes, ports, files, containers, networks, and volumes are removed afterward.
 

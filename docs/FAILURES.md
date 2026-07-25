@@ -259,3 +259,41 @@ cleanup checks.
 **Prevention:** Keep acceptance helpers portable across POSIX awk implementations, treat Docker
 cidfiles as newline-agnostic, and set explicit least-privilege modes for task files consumed through
 user-namespaced bind mounts. Never reuse partial evidence from a failed disposable run.
+
+## 2026-07-26 — Phase 2A acceptance verifier invalidated disposable runs
+
+**Status:** Resolved
+
+**Observed:** Task 8 stopped in several operator-side verifier paths without identifying a product
+defect. Early runs used a corrupted inline SQLite query, an unsupported Compose `ps` format, an
+incorrect baseline hash, a shortened Alembic revision expectation, and the wrong Ollama response
+shape. Firefox preflights then exposed assumptions about Snap-visible fixture paths, CSS-transformed
+accessible names, scrollbar-adjusted client width, opaque WebDriver element IDs, and keyboard focus
+order. Removing a stopped API container to isolate hub-down access logs also made a later sentinel
+image lookup empty. The first otherwise passing nine-width run ended on a misspelled final evidence
+field, and the next printed a passing result but remained alive because a Node stream worker was
+blocked reading the acknowledgement FIFO.
+
+**Impact:** No application, migration, schema, dependency, or frozen-candidate defect was found.
+Partial evidence from every affected run was discarded. One early interactive job-control
+experiment left an exactly identified task-owned host process after its cleanup check; it was
+explicitly terminated before work continued. Every later failed run reported `cleanup_status=0`,
+and the final uninterrupted run preserved all preexisting resources and left Git unchanged.
+
+**Cause:** The temporary harness mixed fragile inline commands and incidental tool output with
+acceptance assertions, assumed Compose could rediscover an image after its only service container
+was removed, treated remote element handles as stable DOM identity, and used a blocking stream
+abstraction for FIFO acknowledgements.
+
+**Resolution:** Moved reusable checks into syntax-checked task-owned files, used exact committed
+revision IDs and response contracts, kept nonessential diagnostics outside the fatal supervisor
+path, copied Firefox fixtures into the Snap-visible task directory, measured layout with
+`documentElement.clientWidth`, asserted focus by current role/name/DOM ownership, cached the already
+verified API image ID, reconciled all 59 browser epochs to raw API and sentinel logs, and replaced
+the FIFO stream with bounded nonblocking reads. The fresh exact-candidate run then passed every
+gate and exited with `original_status=0 cleanup_status=0`.
+
+**Prevention:** Preflight verifier syntax and lifecycle behavior, keep task ownership fail-closed,
+compare browser semantics rather than opaque handles, link derived counts to raw task-owned logs,
+and restart all acceptance steps from the frozen candidate after any verifier failure instead of
+reusing partial evidence.

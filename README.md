@@ -45,8 +45,8 @@ It remains intentionally read-only around Ollama and n8n and does not expose Doc
 workflow or execution inventory, shell, model-management, prompt-execution, provider
 synchronization, or cloud-AI controls. Workflow links remain inert stored references rather than
 health targets. Phase 1C final acceptance passed from corrective commit `7b5ec9f`, completing Phase
-1. The approved Phase 2A implementation is present; final-candidate acceptance remains pending until
-Task 8.
+1. Phase 2A final acceptance passed from exact candidate `55de311`, completing the credential-free
+n8n health-observation slice without requiring a live n8n server.
 
 ## Architecture
 
@@ -356,11 +356,24 @@ matrix. The acceptance stack, browser processes, temporary databases, and task-o
 removed, and the final scope/artifact audit found no dependency, schema, deployment, secret, remote,
 or prohibited-capability drift.
 
-Phase 2A implementation now covers the fixed credential-free n8n client and route, strict browser
-contract, abort-owned observation lifecycle, normalized Integrations status UI, and five-view
-responsive navigation. The final-candidate acceptance that repeats all host, migration, isolated
-Compose, Firefox, cleanup, and scope gates remains pending until Task 8; no live home n8n server is
-required.
+Phase 2A final acceptance passed from exact candidate
+`55de3113dfb358640d50b36b3a549a2cbb29e8a8`. A single fresh supervised run passed dependency
+installation, stable formatting, 585 backend tests, 164 backend end-to-end tests, 394 frontend tests
+across 20 files, lint, strict typechecks, production builds, 82 focused n8n checks, 11 live
+host-sentinel cases, and 139 Prompt/Workflow Link/Transfer regression tests. The reversible
+two-revision migration lifecycle and six-row isolated Compose matrix also passed, together with 12
+direct/proxied Phase 1 route smokes. Acceptance used uv 0.11.7, Node.js 20.20.2, pnpm 10.15.1,
+Docker client/server 29.1.3, Docker Compose 2.40.3, Firefox 152.0.5, and geckodriver 0.36.0.
+
+Firefox 152.0.5 passed the complete operator flow and exact 320, 600, 601, 880, 881, 1024, 1080,
+1081, and 1280 px viewport matrix. Its 59 controlled state epochs reconciled to 67 browser status
+requests, 64 API access records, 35 liveness requests, and 23 readiness requests; the intentionally
+aborted request reached the sentinel but correctly produced no completed API access record. Every
+viewport had zero document overflow, navigation controls were at least 44 px high, focus outlines
+were at least 3 px, the 2,048-character origin wrapped as inert text, and browser storage remained
+unchanged. The supervisor and an independent fresh-shell audit confirmed complete process, port,
+file, database, browser-profile, container, network, and volume cleanup with clean Git. No real home
+n8n server was required.
 
 ## Security posture
 
@@ -421,8 +434,8 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
 4. **Phase 1C — Import/Export (complete):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
 5. **Phase 2 — Read-only integrations (in progress):** Phase 2A credential-free n8n health
-   observation is implemented with final-candidate acceptance pending; credentialed n8n inventory
-   (Phase 2B) and separately designed container visibility (Phase 2C) remain deferred.
+   observation is implemented and accepted. Credentialed n8n inventory (Phase 2B) and separately
+   designed container visibility (Phase 2C) remain deferred and require new design approval.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.

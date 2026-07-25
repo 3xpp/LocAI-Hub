@@ -2352,3 +2352,105 @@ This journal records what is built, why it changes, and how each milestone is ve
 - No dependency, manifest, lockfile, schema, Dockerfile, Vite-config, n8n service, key, provider
   mutation, public binding, or production configuration changed, and no real environment file was
   opened. Final exact-candidate acceptance remains Task 8.
+
+## 2026-07-26 — Phase 2A exact-candidate acceptance and completion
+
+### Exact candidate and fresh gates
+
+- Restarted the complete Task 8 acceptance from
+  `55de3113dfb358640d50b36b3a549a2cbb29e8a8` (`chore: finalize phase 2a integration`) with a clean
+  worktree, fresh private task root, isolated Compose project, five proven-free loopback ports, and
+  one cleanup supervisor spanning every gate.
+- The intentional nonzero supervisor exercise proved failure-path cleanup before the successful
+  run. Candidate and control-file hashes, preexisting Docker IDs, ignored dependency-directory
+  existence, listeners, Git state, remote, and upstream were snapshotted before testing.
+- `make install`, `make format`, `git diff --exit-code`, `make test`, `make test-e2e`,
+  `make test-web`, `make lint`, `make typecheck`,
+  `uv --directory backend run ruff format --check .`, `env --chdir=web pnpm build`, and
+  `make build` all passed from that same candidate.
+- The fresh gates passed 585 backend tests, 164 end-to-end tests, and 394 frontend tests across 20
+  files. Ruff, ESLint, strict mypy, TypeScript, formatting, the 60-module Vite build, and both
+  explicit-safe Compose image builds passed without changing the candidate, manifests, or
+  lockfiles.
+- Acceptance used uv 0.11.7, Node 20.20.2, pnpm 10.15.1, Docker client/server 29.1.3, Docker Compose
+  2.40.3+ds1-0ubuntu1~24.04.1, Firefox 152.0.5, and geckodriver 0.36.0.
+
+### Backend, migration, and isolated Compose evidence
+
+- The separately visible Settings, n8n client, and Integrations API suites passed 4, 69, and 9 tests
+  respectively, for 82 focused tests.
+- Eleven fresh host cases passed: missing and empty configuration made zero provider calls; invalid
+  configuration failed closed without a transport; online made the two ordered fixed-path requests;
+  liveness failure, redirect, connection failure, and hard timeout stopped after liveness; degraded,
+  readiness connection closure, and readiness timeout made liveness then readiness requests.
+- Every sentinel request was credential-free `GET /healthz` or `GET /healthz/readiness`; redirects
+  were not followed, TLS verification remained enabled, ambient proxy configuration was ignored,
+  readiness received no liveness cookie, and synthetic body, cookie, invalid-value, exception,
+  header, and reason-phrase markers were absent from Hub responses and logs.
+- The focused migration test and 139 Prompt, Workflow Link, and Transfer regression tests passed.
+  A disposable database upgraded to head, passed `alembic check`, downgraded to 0001, re-upgraded to
+  head, and downgraded to base. Exactly revisions 0001 and 0002 remained, with SHA-256 values
+  `4f1e37711a7d7311a6d138023bc014bd7c755e20ca860082c494bd34ba50f8b5` and
+  `03b30ecf269a7fb716058c477f33acfde1ba4be3a2bca2c0b21072675f3a7407`.
+- The isolated six-row Compose matrix passed blank, online, degraded, liveness-failure, redirect,
+  and delay behavior through both direct API and Vite-proxied routes. Blank configuration produced
+  zero provider calls; configured observations produced only the expected one- or two-path
+  sequences, with matching normalized JSON and privacy headers.
+- Six direct and six proxied Phase 1 route smokes passed. The rendered stack retained exactly API
+  and web services, loopback-only publishing, API-only `N8N_BASE_URL` forwarding, explicit safe
+  Ollama configuration, `/dev/null` env-file selection, and no n8n service, API key, public port,
+  privilege, capability, secret, or Docker access.
+
+### Real Firefox functional and viewport acceptance
+
+- One real Firefox session ran with `acceptInsecureCerts: false`, no configured proxy, no browser
+  extension, and only the W3C WebDriver protocol. Session deletion removed its disposable profile.
+- Overview issued zero n8n status requests. Integrations entry and manual refresh exercised
+  unconfigured, online, degraded, offline, invalid, delayed, and Hub-down behavior; pending duplicate
+  activation remained one request, the idle observation window remained zero, stale refresh retained
+  the prior snapshot, and navigation abort plus re-entry preserved newest-generation ownership.
+- Prompt, Workflow Link, and prepared or pending Transfer guards blocked Integrations with zero
+  status requests. Leaving Integrations required no confirmation. Accessible roles, labels, live
+  regions, retained refresh focus, inert origins, and unchanged local/session/Cache/IndexedDB/service
+  worker storage all passed.
+- Raw-log reconciliation passed 59 exact state epochs with 67 browser status resources, 64 API
+  access-log entries, 35 liveness requests, and 23 readiness requests. Both Hub-down browser
+  requests correctly reached no API; the navigation-aborted request reached the sentinel even
+  though disconnect handling emitted no Uvicorn access line. Browser provider-origin resources
+  remained zero.
+- Firefox exercised exact 320, 600, 601, 880, 881, 1024, 1080, 1081, and 1280 px CSS viewports at
+  900 px high. Their measured dashboard widths were respectively 284, 480, 553, 680, 805, 948,
+  1004, 1005, and 1180 px.
+- Maximum document overflow was 0 px, minimum navigation-control height was 44 px, minimum focus
+  outline width was 3 px, and the exact inert wrapping origin was 2,048 characters. The approved
+  mobile 3+2 navigation, tablet one-row navigation below metadata, desktop inline navigation,
+  stacked telemetry, bounds, non-overlap, keyboard reachability, and focus-clipping assertions
+  passed at every breakpoint.
+
+### Scope, remote-state, and cleanup audit
+
+- The 20-point scope audit passed with one authorized workflow deviation. Manifests, lockfiles,
+  migrations, database and transfer domains, Dockerfiles, and Vite configuration retained their
+  frozen control hashes. Repository scans found no dependency, schema, credentialed n8n inventory,
+  API key, generic target, custom path, polling, retry, persistence, provider mutation,
+  authentication, production, public-binding, Docker socket, SDK, Engine API, CLI, privileged, or
+  TLS-bypass drift.
+- Only `.env.example` is tracked among environment files. No database, dependency directory, build
+  output, cache, bytecode, browser profile, log, certificate, key, credential, secret, or acceptance
+  artifact became tracked or Git-visible as untracked. No real n8n server was required; Docker was
+  used only by the isolated operator-side acceptance and was never exposed to the application.
+- The plan's original no-remote/no-push assumption was superseded by the user's explicit
+  instruction to push before acceptance. `origin` remained `https://github.com/3xpp/LocAI-Hub`,
+  `main` continued to track `origin/main`, and both already referenced the frozen candidate. The
+  acceptance run made no remote mutation and performed no push.
+- Final supervisor run `5d718577-c5e8-43e6-9bad-20c9f8e89385` exited with original status 0 and
+  cleanup status 0. Independent post-cleanup checks proved the task and Snap fixture roots absent,
+  all five ports free, no task-owned process/container/network/volume remaining, every preexisting
+  Docker ID and ignored dependency path preserved, and Git clean with unchanged remote/upstream
+  state.
+- Phase 2A is implemented and accepted. Credentialed n8n inventory and Docker/container visibility
+  remain deferred to separately brainstormed and approved Phase 2B/2C work.
+
+### Commit
+
+- `test: record phase 2a acceptance validation`
