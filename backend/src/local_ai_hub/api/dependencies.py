@@ -6,6 +6,7 @@ from fastapi import Depends
 
 from local_ai_hub.config import Settings, get_settings
 from local_ai_hub.services.n8n import N8nHealthClient
+from local_ai_hub.services.n8n_inventory import N8nWorkflowInventoryClient
 from local_ai_hub.services.ollama import OllamaClient
 
 
@@ -23,3 +24,14 @@ def get_n8n_health_client(
     """Build an n8n health client from trusted process configuration."""
 
     return N8nHealthClient(settings.n8n_base_url)
+
+
+def get_n8n_workflow_inventory_client(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> N8nWorkflowInventoryClient:
+    """Build the fixed inventory client from trusted process configuration."""
+
+    return N8nWorkflowInventoryClient(
+        settings.n8n_base_url,
+        settings.n8n_api_key,
+    )

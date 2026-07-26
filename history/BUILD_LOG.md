@@ -2626,3 +2626,63 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add n8n workflow inventory client`
+
+## 2026-07-26 — Phase 2B strict n8n workflow inventory API
+
+### Milestone
+
+- Added strict browser-visible workflow summary and inventory response schemas. They forbid extra
+  fields, enforce the 256-character name, 64-character normalized UTC timestamp, exact boolean,
+  200-item, closed-state, fixed-error, and cross-field contracts.
+- Added a dedicated FastAPI dependency that constructs the credentialed inventory client only from
+  repr-suppressed process Settings. The existing health dependency remains separate and receives no
+  API key.
+- Added only `GET /api/integrations/n8n/workflows`. The route accepts no declared parameter or
+  request body, maps the seven normalized service states to the strict response model, exposes only
+  name, active state, updated time, and truncation, and applies `no-store`, `no-cache`, and
+  `nosniff` privacy headers.
+- Added a pure-ASGI boundary scoped only to that decoded fixed path and descendants beneath its
+  slash boundary. It prevents automatic slash/detail redirects, replaces the required JSON/privacy
+  headers exactly once for every fixed-path response, and preserves unexpected-defect signaling
+  while replacing arbitrary exception text before Uvicorn can log it.
+- Kept router mounting, authentication, persistence, provider operations, application Docker
+  access, dependencies, schemas, deployment configuration, and every Phase 2A health behavior
+  unchanged.
+
+### TDD, privacy, and API evidence
+
+- The strict-schema red step stopped during collection with the intended missing
+  `N8nWorkflowInventoryResponse` import. Its green step passed all 44 schema tests.
+- The API red step stopped during collection with the intended missing
+  `get_n8n_workflow_inventory_client` import. The completed API suite passed all 33 tests.
+- Route tests prove the OpenAPI surface contains only the parameter-free GET operation, no request
+  body, no detail or execution path, and no POST, PUT, PATCH, or DELETE behavior. Browser-supplied
+  target, cursor, filter, JSON, and provider-header markers are ignored and never reflected.
+- Independent review then reproduced a trailing-slash HTTP 307 without privacy headers, a
+  plain-text unexpected HTTP 500 without privacy headers, and synthetic exception text in the real
+  Uvicorn error log. The first exact-slash correction still allowed a repeated-slash descendant to
+  redirect. The final path-scoped boundary returns a fixed private JSON 404 for every decoded
+  slash/detail descendant, gives GET/non-GET/error responses one exact header set, sends a fixed
+  private JSON 500, and re-raises a fixed error with the original traceback and no original
+  exception context. The factual incident and resolution are recorded in `docs/FAILURES.md`.
+- Direct dependency construction proves synthetic origin and key markers are absent from Settings,
+  inventory-client, and health-client representations without inspecting private client fields.
+- The 13-test access-log suite proves real Uvicorn access output contains only the fixed Hub path
+  plus the existing query-redaction sentinel, and its error output contains only the fixed defect.
+  Synthetic key, provider-body, cursor, workflow-name, and programming-error markers remain absent
+  from both streams. No access-log filter behavior was changed.
+
+### Validation
+
+- Focused schema, API, and access-log validation passed all 90 tests in 1.25 seconds with the one
+  previously documented, non-blocking Starlette TestClient deprecation warning.
+- `uv --directory backend run pytest` passed all 752 tests in 4.27 seconds with that same warning.
+- `uv --directory backend run ruff format src tests` reported all 60 files unchanged on the final
+  run; `uv --directory backend run ruff check src tests` passed;
+  `uv --directory backend run ruff format --check src tests` confirmed all 60 files formatted; and
+  `uv --directory backend run mypy src` reported no issues in 38 source files.
+- `git diff --check` passed.
+
+### Commit
+
+- `feat: expose n8n workflow inventory api`

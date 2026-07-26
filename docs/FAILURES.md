@@ -365,3 +365,32 @@ result, and client cleanup still runs whenever ownership was acquired.
 
 **Prevention:** Retain the transport-factory exception/privacy regression and keep all transport
 creation, request I/O, response processing, and owned cleanup inside one normalization boundary.
+
+## 2026-07-26 — Inventory API edge responses bypassed the fixed privacy boundary
+
+**Status:** Resolved
+
+**Observed:** Independent Task 2 review requested trailing-slash inventory paths with redirect
+following disabled and received HTTP 307 with a `Location` header and none of the inventory privacy
+headers. The first exact-slash correction still allowed a repeated-slash descendant to redirect.
+A separate unexpected-client-error probe received a plain-text HTTP 500 without those headers.
+Repeating the failure through a real local Uvicorn server showed the synthetic exception marker in
+`uvicorn.error`, even though the response and access log did not contain it.
+
+**Cause:** The thin FastAPI route applied privacy headers only to successful exact-path responses.
+Starlette's application router therefore supplied its default slash redirect, and its outer server
+error boundary generated and logged unexpected failures after the route-owned `Response` was
+discarded.
+
+**Resolution:** A pure-ASGI boundary now handles only the decoded fixed inventory path and every
+descendant spelling beneath its slash boundary. It returns a fixed private JSON 404 without
+redirecting or reflecting slash/detail variants, replaces the four required headers exactly once
+on every fixed-path response, and sends a fixed private JSON 500 for an unexpected pre-response
+exception. It then raises a fixed `RuntimeError` with the original traceback but no original
+exception context, preserving defect visibility without forwarding arbitrary exception text to
+Uvicorn. Cancellation and every unrelated sibling path remain outside the boundary.
+
+**Prevention:** Retain the no-redirect, header-uniqueness, non-GET, default-TestClient,
+unrelated-path, and dual Uvicorn access/error-log regressions. Synthetic key, provider-body, cursor,
+workflow-name, query, and programming-error markers must remain absent from both log streams and
+all fixed error bodies.

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from local_ai_hub import __version__
 from local_ai_hub.api.access_logs import install_safe_access_log_filter
+from local_ai_hub.api.n8n_inventory_http import N8nInventoryHttpBoundary
 from local_ai_hub.api.routes import (
     health,
     integrations,
@@ -32,6 +33,7 @@ app = FastAPI(
     version=__version__,
     lifespan=lifespan,
 )
+app.add_middleware(N8nInventoryHttpBoundary)
 
 
 @app.exception_handler(RequestValidationError)
