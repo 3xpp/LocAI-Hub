@@ -85,7 +85,7 @@ def _normalize_host(host: str) -> str | None:
     return canonical_ipv4 if host == canonical_ipv4 else None
 
 
-def _normalize_base_url(base_url: str) -> str | None:
+def normalize_n8n_origin(base_url: str) -> str | None:
     """Return a canonical credential-free HTTP(S) root origin."""
 
     if (
@@ -129,7 +129,7 @@ def _normalize_base_url(base_url: str) -> str | None:
 def is_canonical_n8n_origin(value: str) -> bool:
     """Return whether a display value is already the canonical safe origin."""
 
-    return _normalize_base_url(value) == value
+    return normalize_n8n_origin(value) == value
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,7 +160,7 @@ class N8nHealthClient:
             request_base_url = None
         else:
             configured = True
-            request_base_url = _normalize_base_url(base_url)
+            request_base_url = normalize_n8n_origin(base_url)
         self._configured = configured
         self._request_base_url = request_base_url
         self._transport_factory = transport_factory

@@ -144,6 +144,7 @@ def test_online_uses_fresh_clients_and_never_forwards_liveness_cookie() -> None:
         paths.append(request.url.path)
         assert request.method == "GET"
         assert "cookie" not in request.headers
+        assert "X-N8N-API-KEY" not in request.headers
         if request.url.path == "/healthz":
             return httpx.Response(
                 200,

@@ -2551,3 +2551,78 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 2b implementation plan`
+
+## 2026-07-26 — Phase 2B n8n workflow inventory client
+
+### Milestone
+
+- Added optional process-only `N8N_API_KEY` configuration with exact empty/missing handling,
+  nonempty preservation, and dataclass repr suppression. No secret file was read or changed.
+- Exposed the existing canonical n8n-origin normalizer under one shared name without changing the
+  Phase 2A health request paths, result contract, or credential-free transport.
+- Added the independent credentialed inventory client for the one approved fixed
+  `GET /api/v1/workflows` operation. Each request fixes `limit=50`,
+  `excludePinnedData=true`, `Accept: application/json`, `Accept-Encoding: identity`, and the
+  backend-owned encoded cursor while disabling redirects and ambient proxy/environment settings.
+- Accepted HTTPS origins and plain HTTP only for canonical `localhost`, `127.0.0.1`, and `::1`
+  loopback forms in the focused matrix. Rejected homelab names, Docker host/gateway names,
+  private-network addresses, whitespace/control/non-ASCII keys, and keys above 8,192 characters
+  without creating a transport.
+- Implemented a complete-attempt result with no partial later-page data. Provider failures map to
+  fixed states; only name, exact boolean active state, and normalized UTC updated time survive the
+  projection.
+
+### Bounds and privacy evidence
+
+- Enforced four pages, 50 items per page, 200 projected items, 8 MiB of cumulative raw
+  identity-representation bytes, JSON depth 64, visible-ASCII cursor length 2,048, and one
+  five-second eligibility deadline across transport creation, I/O, decoding, parsing, validation,
+  and pagination.
+- Strict response tests cover exact JSON media-type/UTF-8 rules, identity-only content encoding,
+  duplicate headers and keys, malformed and oversized lengths, UTF-8 BOM and decode failures,
+  non-finite numbers, excessive integers/depth, projected control/lone-surrogate rejection,
+  timestamp boundaries, cursor repetition/encoding, exact and cumulative byte limits, and timeout
+  precedence.
+- Request assertions prove there is no authorization, cookie, referer, forwarding header, request
+  body, request-controlled path, or extra query parameter. Fresh per-page clients do not reuse a
+  provider cookie.
+- Projection and error tests prove generated provider-private, transport, timeout, credential, and
+  workflow-detail markers do not appear in normalized results. The Phase 2A health regression
+  explicitly proves `X-N8N-API-KEY` is absent from both fixed health requests.
+
+### TDD and validation
+
+- `uv --directory backend run pytest tests/unit/test_config.py -q` first produced the intended
+  four failures and three passes because `Settings` had no inventory-key field.
+- `uv --directory backend run pytest tests/unit/test_config.py tests/unit/test_n8n_client.py -q`
+  then passed all 76 configuration and health tests.
+- `uv --directory backend run pytest tests/unit/test_n8n_inventory_client.py -q` first stopped
+  during collection because the new service module did not exist, as intended by the red step.
+- The first green-path inventory slice exposed HTTPX eager mock bodies that were already consumed
+  before `aiter_raw()`. The corrected test harness uses explicit asynchronous response streams;
+  the factual incident and resolution are recorded in `docs/FAILURES.md`.
+- Independent review then reproduced a 10-millisecond timeout awaiting response cleanup for about
+  212 milliseconds. The page operation now explicitly owns its client and response, bounds send,
+  raw reading, response close, and client close against the remaining deadline, and always attempts
+  client close without creating a background task. A non-returning-close/no-remaining-task
+  regression locks that boundary.
+- Final review preserved caller cancellation ahead of cleanup timeouts and moved transport/client
+  construction inside the fixed error-normalization boundary. Dedicated regressions prove external
+  `CancelledError` propagation and fixed `unavailable` mapping without transport-factory marker
+  reflection. Both observed review failures and their resolutions are recorded in
+  `docs/FAILURES.md`.
+- Final focused command
+  `uv --directory backend run pytest tests/unit/test_config.py tests/unit/test_n8n_client.py
+  tests/unit/test_n8n_inventory_client.py -q` passed all 190 tests.
+- `uv --directory backend run pytest` passed all 702 tests in 3.40 seconds with the one previously
+  documented, non-blocking Starlette TestClient deprecation warning.
+- `uv --directory backend run ruff format src tests` reported all 59 files unchanged on the final
+  run; `uv --directory backend run ruff check src tests` passed; and
+  `uv --directory backend run ruff format --check src tests` confirmed all 59 files formatted.
+- `uv --directory backend run mypy src` reported no issues in 37 source files.
+- No dependency, lockfile, schema, migration, authentication, Docker, deployment, provider
+  mutation, polling, retry, persistence, or public-binding change was made.
+
+### Commit
+
+- `feat: add n8n workflow inventory client`

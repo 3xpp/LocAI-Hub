@@ -297,3 +297,71 @@ gate and exited with `original_status=0 cleanup_status=0`.
 compare browser semantics rather than opaque handles, link derived counts to raw task-owned logs,
 and restart all acceptance steps from the frozen candidate after any verifier failure instead of
 reusing partial evidence.
+
+## 2026-07-26 — Eager HTTPX mock bodies did not exercise raw inventory streaming
+
+**Status:** Resolved
+
+**Observed:** The first Phase 2B inventory-client slice passed 13 tests and failed three because
+`response.aiter_raw()` raised `httpx.StreamConsumed` for successful mock responses. Two later
+harness cases exposed the same eager-body mismatch as a decoding error for an intentionally invalid
+gzip representation and a Unicode encoding error while constructing a lone-surrogate fixture.
+
+**Cause:** Under HTTPX 0.28.1, mock responses created with eager `json=` or `content=` bodies are
+already marked consumed, and HTTPX's eager JSON serializer does not escape lone surrogates. Those
+fixtures did not model the streamed provider responses that the production byte limit must inspect.
+
+**Resolution:** The test harness now wraps generated response bytes in an explicit
+`httpx.AsyncByteStream` and serializes JSON fixtures to escaped UTF-8 bytes before streaming them.
+The client retains `aiter_raw()`, so its cumulative eight-MiB limit measures the approved identity
+representation without a decoding layer. The focused 187-test inventory/configuration/health
+matrix passes with the corrected streaming fixtures.
+
+**Prevention:** Construct inventory success-body fixtures as asynchronous streams and retain the
+raw-byte boundary tests for exact-budget, over-budget, cumulative-page, encoding, and timeout
+behavior.
+
+## 2026-07-26 — Inventory timeout awaited response cleanup past its deadline
+
+**Status:** Resolved
+
+**Observed:** An independent Task 1 review reproduced a 10-millisecond inventory timeout returning
+after approximately 212 milliseconds when the response stream's asynchronous close took 200
+milliseconds. A close operation that never returned could therefore hold the request after the
+eligibility deadline. The follow-up review also cancelled an in-flight inventory task and observed
+the cleanup timeout replace the caller's `CancelledError` with a normalized inventory timeout.
+
+**Cause:** The request and response context managers lived directly inside `asyncio.timeout()`.
+When the timeout cancelled body reading, Python unwound both context managers before converting the
+cancellation to `TimeoutError`, so their awaited cleanup was no longer bounded by the expired
+timeout.
+
+**Resolution:** The page operation now owns the HTTPX client and streamed response explicitly.
+Sending and raw-body consumption run under the remaining deadline; response and client close are
+then attempted in order, each under a fresh remaining-time timeout, and client close is attempted
+even when response close expires. Cleanup expiry maps to the fixed timeout state. A non-returning
+but cancellation-cooperative close regression proves the result returns before the cleanup delay
+and leaves no child task behind. Operation-side external cancellation is retained ahead of cleanup
+errors, with a separate regression proving `CancelledError` still reaches the caller.
+
+**Prevention:** Retain the non-returning response-close, cancellation-propagation, and
+no-remaining-task regressions, keep timeout ownership outside provider-facing context-manager
+cleanup, and do not detach provider I/O or cleanup into background tasks.
+
+## 2026-07-26 — Inventory transport-factory failures escaped normalization
+
+**Status:** Resolved
+
+**Observed:** Final Task 1 review injected an `httpx.ConnectError` with a private marker from the
+inventory transport factory. The exception escaped directly instead of producing the fixed
+`unavailable` result.
+
+**Cause:** Transport creation and HTTPX client construction occurred before the page operation's
+error-normalization boundary.
+
+**Resolution:** Transport and client construction now execute inside the owned page operation.
+Request errors raised there map to `unavailable`, the private marker is absent from the normalized
+result, and client cleanup still runs whenever ownership was acquired.
+
+**Prevention:** Retain the transport-factory exception/privacy regression and keep all transport
+creation, request I/O, response processing, and owned cleanup inside one normalization boundary.
