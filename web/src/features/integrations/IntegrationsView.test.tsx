@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { N8nStatusResponse } from '../../api/integrations'
 import { IntegrationsView } from './IntegrationsView'
 import type { IntegrationsController } from './useIntegrations'
+import type { N8nWorkflowInventoryController } from './useN8nWorkflowInventory'
 
 const online: N8nStatusResponse = {
   state: 'online',
@@ -27,15 +28,72 @@ const makeController = (
   ...overrides,
 })
 
+const makeInventoryController = (
+  overrides: Partial<N8nWorkflowInventoryController> = {},
+): N8nWorkflowInventoryController => ({
+  snapshot: null,
+  requestStatus: 'idle',
+  pending: false,
+  error: null,
+  stale: false,
+  lastLoaded: null,
+  settlementSequence: 0,
+  load: vi.fn(),
+  refresh: vi.fn(),
+  ...overrides,
+})
+
 const politeRegion = (container: HTMLElement) => {
   const region = container.querySelector<HTMLElement>(
-    '[aria-live="polite"][aria-atomic="true"]',
+    '[aria-label="n8n health announcements"][aria-live="polite"][aria-atomic="true"]',
   )
-  if (region === null) throw new Error('Polite live region is missing')
+  if (region === null) throw new Error('Health polite live region is missing')
   return region
 }
 
 describe('IntegrationsView', () => {
+  it('keeps health and inventory as independent ordered boundaries', () => {
+    const { container } = render(
+      <IntegrationsView
+        controller={makeController()}
+        inventoryController={makeInventoryController()}
+      />,
+    )
+
+    const healthHeading = screen.getByRole('heading', {
+      name: 'Integrations',
+    })
+    const inventoryHeading = screen.getByRole('heading', {
+      name: 'n8n workflow inventory',
+    })
+    expect(
+      healthHeading.compareDocumentPosition(inventoryHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Refresh health' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Load workflows' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Health uses fixed credential-free/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Workflow inventory uses a backend-only key/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('n8n health announcements'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('n8n workflow inventory announcements'),
+    ).toBeInTheDocument()
+    expect(container.querySelectorAll('[aria-live="polite"]')).toHaveLength(
+      2,
+    )
+    expect(screen.getByText('Phase 02B')).toBeInTheDocument()
+  })
+
   it('renders an inert initial loading state without moving focus', () => {
     const { container } = render(
       <IntegrationsView
@@ -43,11 +101,12 @@ describe('IntegrationsView', () => {
           requestStatus: 'loading',
           pending: true,
         })}
+        inventoryController={makeInventoryController()}
       />,
     )
 
-    expect(screen.getAllByText('Checking n8n')).toHaveLength(2)
-    const button = screen.getByRole('button', { name: 'Checking n8n' })
+    expect(screen.getAllByText('Checking health')).toHaveLength(2)
+    const button = screen.getByRole('button', { name: 'Checking health' })
     expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(button).not.toBeDisabled()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
@@ -61,7 +120,10 @@ describe('IntegrationsView', () => {
     const initial = makeController()
     const checkedAt = new Date('2026-07-24T10:11:12.000Z')
     const { container, rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
 
     expect(screen.getByText('Not yet')).toHaveClass(
@@ -76,6 +138,7 @@ describe('IntegrationsView', () => {
           observation: online,
           lastChecked: checkedAt,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
 
@@ -96,6 +159,7 @@ describe('IntegrationsView', () => {
     const { container } = render(
       <IntegrationsView
         controller={makeController({ observation: unconfigured })}
+        inventoryController={makeInventoryController()}
       />,
     )
 
@@ -155,6 +219,7 @@ describe('IntegrationsView', () => {
       render(
         <IntegrationsView
           controller={makeController({ observation })}
+          inventoryController={makeInventoryController()}
         />,
       )
 
@@ -190,6 +255,7 @@ describe('IntegrationsView', () => {
     render(
       <IntegrationsView
         controller={makeController({ observation: invalid })}
+        inventoryController={makeInventoryController()}
       />,
     )
 
@@ -202,7 +268,10 @@ describe('IntegrationsView', () => {
   it('uses one assertive page alert for a first Hub failure', () => {
     const error = 'Unable to check n8n through the Hub.'
     const { container } = render(
-      <IntegrationsView controller={makeController({ error })} />,
+      <IntegrationsView
+        controller={makeController({ error })}
+        inventoryController={makeInventoryController()}
+      />,
     )
 
     expect(screen.getByRole('alert')).toHaveTextContent(error)
@@ -219,7 +288,10 @@ describe('IntegrationsView', () => {
       lastChecked: checkedAt,
     })
     const { container, rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
     const expectedTime = checkedAt.toLocaleTimeString([], {
       hour: '2-digit',
@@ -234,6 +306,7 @@ describe('IntegrationsView', () => {
           error,
           stale: true,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
 
@@ -252,7 +325,10 @@ describe('IntegrationsView', () => {
   it('announces a completed observation politely without stealing focus', () => {
     const initial = makeController()
     const { container, rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
 
     rerender(
@@ -262,6 +338,7 @@ describe('IntegrationsView', () => {
           observation: online,
           lastChecked: new Date('2026-07-24T10:11:12.000Z'),
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
 
@@ -276,7 +353,10 @@ describe('IntegrationsView', () => {
     const firstChecked = new Date('2026-07-24T10:11:12.000Z')
     const secondChecked = new Date('2026-07-24T10:12:13.000Z')
     const { container, rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
 
     rerender(
@@ -286,6 +366,7 @@ describe('IntegrationsView', () => {
           observation: online,
           lastChecked: firstChecked,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
     const region = politeRegion(container)
@@ -299,10 +380,12 @@ describe('IntegrationsView', () => {
           observation: online,
           lastChecked: secondChecked,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
 
-    expect(container.querySelectorAll('[aria-live="polite"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[aria-live="polite"]')).toHaveLength(2)
+    expect(region.childElementCount).toBe(1)
     expect(region).toHaveTextContent('n8n observation updated: online.')
     expect(region.firstElementChild).not.toBe(firstAnnouncement)
   })
@@ -314,7 +397,10 @@ describe('IntegrationsView', () => {
       lastChecked: new Date('2026-07-24T10:11:12.000Z'),
     })
     const { container, rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
 
     rerender(
@@ -324,6 +410,7 @@ describe('IntegrationsView', () => {
           error,
           stale: true,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
     const region = politeRegion(container)
@@ -337,6 +424,7 @@ describe('IntegrationsView', () => {
           requestStatus: 'refreshing',
           pending: true,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
     rerender(
@@ -346,10 +434,12 @@ describe('IntegrationsView', () => {
           error,
           stale: true,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
 
-    expect(container.querySelectorAll('[aria-live="polite"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[aria-live="polite"]')).toHaveLength(2)
+    expect(region.childElementCount).toBe(1)
     expect(region).toHaveTextContent(error)
     expect(region.firstElementChild).not.toBe(firstAnnouncement)
   })
@@ -359,9 +449,12 @@ describe('IntegrationsView', () => {
     const refreshN8n = vi.fn()
     const initial = makeController({ refreshN8n })
     const { rerender } = render(
-      <IntegrationsView controller={initial} />,
+      <IntegrationsView
+        controller={initial}
+        inventoryController={makeInventoryController()}
+      />,
     )
-    const button = screen.getByRole('button', { name: 'Refresh n8n' })
+    const button = screen.getByRole('button', { name: 'Refresh health' })
 
     await user.click(button)
     expect(refreshN8n).toHaveBeenCalledTimes(1)
@@ -374,10 +467,11 @@ describe('IntegrationsView', () => {
           requestStatus: 'refreshing',
           pending: true,
         }}
+        inventoryController={makeInventoryController()}
       />,
     )
     const pendingButton = screen.getByRole('button', {
-      name: 'Checking n8n',
+      name: 'Checking health',
     })
     expect(pendingButton).toHaveAttribute('aria-disabled', 'true')
     expect(pendingButton).not.toBeDisabled()
@@ -398,6 +492,7 @@ describe('IntegrationsView', () => {
     const { container } = render(
       <IntegrationsView
         controller={makeController({ observation: maximumOrigin })}
+        inventoryController={makeInventoryController()}
       />,
     )
 

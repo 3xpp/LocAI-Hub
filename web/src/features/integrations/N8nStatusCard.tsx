@@ -74,8 +74,7 @@ export function N8nStatusCard({ observation }: N8nStatusCardProps) {
         </div>
       </dl>
       <p className="integration-card__boundary">
-        Observation only · No workflow, execution, credential, or container
-        access
+        Credential-free health only · No provider data or container access
       </p>
     </article>
   )

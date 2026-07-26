@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { N8nStatusCard } from './N8nStatusCard'
+import { N8nWorkflowInventory } from './N8nWorkflowInventory'
 import type { IntegrationsController } from './useIntegrations'
+import type { N8nWorkflowInventoryController } from './useN8nWorkflowInventory'
 
 interface IntegrationsViewProps {
   controller: IntegrationsController
+  inventoryController: N8nWorkflowInventoryController
 }
 
 interface Announcement {
@@ -19,7 +22,10 @@ const checkedLabel = (value: Date | null) =>
     second: '2-digit',
   }) ?? 'Not yet'
 
-export function IntegrationsView({ controller }: IntegrationsViewProps) {
+export function IntegrationsView({
+  controller,
+  inventoryController,
+}: IntegrationsViewProps) {
   const [announcement, setAnnouncement] = useState<Announcement>({
     message: '',
     sequence: 0,
@@ -71,8 +77,9 @@ export function IntegrationsView({ controller }: IntegrationsViewProps) {
           <h1 id="integrations-title">Integrations</h1>
         </div>
         <p>
-          Observe one configured local n8n origin through the Hub&apos;s fixed,
-          credential-free health boundary.
+          Observe fixed credential-free n8n health endpoints and explicitly
+          load one bounded workflow summary through the backend-only inventory
+          boundary.
         </p>
       </header>
 
@@ -82,10 +89,11 @@ export function IntegrationsView({ controller }: IntegrationsViewProps) {
       >
         <span aria-hidden="true">READ ONLY</span>
         <p>
-          The Hub calls only fixed n8n liveness and readiness paths. It does not
-          inspect workflows, executions, credentials, or Docker.
+          Health uses fixed credential-free liveness and readiness endpoints.
+          Workflow inventory uses a backend-only key with one fixed list
+          endpoint only after explicit operator action.
         </p>
-        <span aria-hidden="true">NO KEY</span>
+        <span aria-hidden="true">FIXED PATHS</span>
       </div>
 
       <div className="integrations-toolbar">
@@ -97,7 +105,9 @@ export function IntegrationsView({ controller }: IntegrationsViewProps) {
           }}
           aria-disabled={controller.pending}
         >
-          <span>{controller.pending ? 'Checking n8n' : 'Refresh n8n'}</span>
+          <span>
+            {controller.pending ? 'Checking health' : 'Refresh health'}
+          </span>
           <span aria-hidden="true">{controller.pending ? '···' : '↻'}</span>
         </button>
         <p>
@@ -129,17 +139,26 @@ export function IntegrationsView({ controller }: IntegrationsViewProps) {
       ) : controller.requestStatus === 'loading' ? (
         <div className="integration-loading" role="status">
           <span aria-hidden="true" />
-          <strong>Checking n8n</strong>
+          <strong>Checking health</strong>
           <p>Requesting one observation through the local Hub.</p>
         </div>
       ) : controller.error === null ? (
         <div className="integration-loading">
           <strong>No observation yet</strong>
-          <p>Use Refresh n8n to request one local observation.</p>
+          <p>
+            Use Refresh health to request one credential-free observation.
+          </p>
         </div>
       ) : null}
 
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
+      <N8nWorkflowInventory controller={inventoryController} />
+
+      <p
+        className="sr-only"
+        aria-label="n8n health announcements"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {announcement.message === '' ? null : (
           <span key={announcement.sequence}>{announcement.message}</span>
         )}
@@ -150,7 +169,7 @@ export function IntegrationsView({ controller }: IntegrationsViewProps) {
         <span aria-hidden="true">//</span>
         <span>Running on your machine · Observation only</span>
         <span className="footer__rule" aria-hidden="true" />
-        <span>Phase 02A</span>
+        <span>Phase 02B</span>
       </footer>
     </section>
   )

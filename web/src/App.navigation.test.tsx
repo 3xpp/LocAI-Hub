@@ -8,6 +8,10 @@ import {
   getN8nStatus,
   type N8nStatusResponse,
 } from './api/integrations'
+import {
+  getN8nWorkflowInventory,
+  type N8nWorkflowInventoryResponse,
+} from './api/n8nWorkflowInventory'
 import { listPrompts } from './api/prompts'
 import {
   TransferHttpError,
@@ -44,6 +48,15 @@ vi.mock('./api/integrations', () => ({
   getN8nStatus: vi.fn(),
 }))
 
+vi.mock('./api/n8nWorkflowInventory', () => {
+  class N8nWorkflowInventoryContractError extends Error {}
+
+  return {
+    N8nWorkflowInventoryContractError,
+    getN8nWorkflowInventory: vi.fn(),
+  }
+})
+
 vi.mock('./api/prompts', () => ({
   createPrompt: vi.fn(),
   deletePrompt: vi.fn(),
@@ -72,6 +85,7 @@ vi.mock('./api/transfer', async (importOriginal) => {
 
 const listPromptsMock = vi.mocked(listPrompts)
 const getN8nStatusMock = vi.mocked(getN8nStatus)
+const getInventoryMock = vi.mocked(getN8nWorkflowInventory)
 const listWorkflowLinksMock = vi.mocked(listWorkflowLinks)
 const getWorkflowLinkMock = vi.mocked(getWorkflowLink)
 const createWorkflowLinkMock = vi.mocked(createWorkflowLink)
@@ -104,6 +118,26 @@ const n8nDegraded: N8nStatusResponse = {
   liveness: 'passed',
   readiness: 'failed',
   error: 'n8n is reachable but not ready',
+}
+
+const inventoryUnconfigured: N8nWorkflowInventoryResponse = {
+  state: 'unconfigured',
+  items: [],
+  truncated: false,
+  error: null,
+}
+
+const inventoryAvailable: N8nWorkflowInventoryResponse = {
+  state: 'available',
+  items: [
+    {
+      name: 'App-owned inventory snapshot',
+      active: true,
+      updated_at: '2026-07-26T08:30:00Z',
+    },
+  ],
+  truncated: false,
+  error: null,
 }
 
 const workflowLink = (id: number, title: string): WorkflowLink => ({
@@ -178,6 +212,7 @@ function transferFile(filename = 'portable.json'): File {
 
 beforeEach(() => {
   getN8nStatusMock.mockReset().mockResolvedValue(n8nUnconfigured)
+  getInventoryMock.mockReset().mockResolvedValue(inventoryUnconfigured)
   listPromptsMock.mockReset().mockResolvedValue({
     items: [],
     total: 0,
@@ -251,6 +286,7 @@ it.each(['Workflows', 'Transfer', 'Integrations'])(
     expect(
       screen.getByRole('heading', { name: 'Prompt registry' }),
     ).toBeInTheDocument()
+    expect(getInventoryMock).not.toHaveBeenCalled()
     expect(screen.getByLabelText(/Prompt title/i)).toHaveValue(
       'Unsaved prompt',
     )
@@ -280,6 +316,7 @@ it.each(['Overview', 'Prompts', 'Transfer', 'Integrations'])(
     expect(
       screen.getByRole('heading', { name: 'Workflow links' }),
     ).toBeInTheDocument()
+    expect(getInventoryMock).not.toHaveBeenCalled()
     expect(title).toHaveValue('Unsaved workflow link')
     expect(getN8nStatusMock).not.toHaveBeenCalled()
   },
@@ -309,6 +346,7 @@ it('blocks every other view while a workflow save is pending', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
   fireEvent.click(screen.getByRole('button', { name: 'Integrations' }))
   expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(confirm).not.toHaveBeenCalled()
   expect(getN8nStatusMock).not.toHaveBeenCalled()
 })
@@ -350,6 +388,7 @@ it('blocks every other view while workflow deletion is pending', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
   fireEvent.click(screen.getByRole('button', { name: 'Integrations' }))
   expect(screen.getByRole('heading', { name: 'Workflow links' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(confirm).not.toHaveBeenCalled()
   expect(getN8nStatusMock).not.toHaveBeenCalled()
 })
@@ -383,6 +422,7 @@ it('keeps Prompts active when its dirty guard cancels Transfer navigation', asyn
 
   expect(confirm).toHaveBeenCalledWith('Discard unsaved prompt changes?')
   expect(screen.getByRole('heading', { name: 'Prompt registry' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(previewTransferBundleMock).not.toHaveBeenCalled()
 })
 
@@ -410,6 +450,7 @@ it.each(['Overview', 'Integrations'])(
     expect(
       screen.getByRole('heading', { name: 'Data transfer' }),
     ).toBeInTheDocument()
+    expect(getInventoryMock).not.toHaveBeenCalled()
     expect(screen.getByText('portable.json')).toBeInTheDocument()
     expect(getN8nStatusMock).not.toHaveBeenCalled()
   },
@@ -480,6 +521,7 @@ it('blocks navigation without prompting while a preview is pending', async () =>
 
   expect(confirm).not.toHaveBeenCalled()
   expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(getN8nStatusMock).not.toHaveBeenCalled()
 })
 
@@ -499,6 +541,7 @@ it('blocks navigation without prompting while export is pending', async () => {
 
   expect(confirm).not.toHaveBeenCalled()
   expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(getN8nStatusMock).not.toHaveBeenCalled()
 })
 
@@ -522,6 +565,7 @@ it('blocks navigation and exposes no cancel while import is pending', async () =
   expect(confirm).not.toHaveBeenCalled()
   expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Data transfer' })).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
   expect(getN8nStatusMock).not.toHaveBeenCalled()
 })
 
@@ -593,6 +637,81 @@ it('keeps the newer Integrations observation after an earlier entry settles late
     screen.queryByText('Liveness passed, but readiness did not.'),
   ).not.toBeInTheDocument()
   expect(screen.queryByText('Degraded')).not.toBeInTheDocument()
+})
+
+it('loads inventory only after explicit Integrations action', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+
+  expect(getInventoryMock).not.toHaveBeenCalled()
+  await user.click(screen.getByRole('button', { name: 'Prompts' }))
+  await user.click(screen.getByRole('button', { name: 'Workflows' }))
+  await user.click(screen.getByRole('button', { name: 'Transfer' }))
+  expect(getInventoryMock).not.toHaveBeenCalled()
+  await user.click(screen.getByRole('button', { name: 'Integrations' }))
+  expect(
+    await screen.findByRole('heading', {
+      name: 'n8n workflow inventory',
+    }),
+  ).toBeInTheDocument()
+  expect(getInventoryMock).not.toHaveBeenCalled()
+
+  await user.click(screen.getByRole('button', { name: 'Load workflows' }))
+  await screen.findByText('Inventory not configured')
+  expect(getInventoryMock).toHaveBeenCalledTimes(1)
+})
+
+it('coalesces pending inventory activation and aborts on leave', async () => {
+  const user = userEvent.setup()
+  let resolve!: (value: N8nWorkflowInventoryResponse) => void
+  getInventoryMock.mockReturnValueOnce(
+    new Promise((resolvePromise) => {
+      resolve = resolvePromise
+    }),
+  )
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: 'Integrations' }))
+  const load = screen.getByRole('button', { name: 'Load workflows' })
+  await user.click(load)
+  const signal = getInventoryMock.mock.calls[0]?.[0]
+  const pending = screen.getByRole('button', {
+    name: 'Loading workflows',
+  })
+  await user.click(pending)
+  await user.keyboard('{Enter}{Space}')
+  expect(getInventoryMock).toHaveBeenCalledTimes(1)
+
+  await user.click(screen.getByRole('button', { name: 'Overview' }))
+  expect(signal?.aborted).toBe(true)
+  await act(async () => resolve(inventoryAvailable))
+  await user.click(screen.getByRole('button', { name: 'Integrations' }))
+  expect(getInventoryMock).toHaveBeenCalledTimes(1)
+  expect(
+    screen.getByText('Workflow inventory not loaded'),
+  ).toBeInTheDocument()
+})
+
+it('preserves a successful in-memory snapshot across navigation', async () => {
+  const user = userEvent.setup()
+  getInventoryMock.mockResolvedValueOnce(inventoryAvailable)
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: 'Integrations' }))
+  await user.click(screen.getByRole('button', { name: 'Load workflows' }))
+  expect(
+    await screen.findByText('App-owned inventory snapshot'),
+  ).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Overview' }))
+  await user.click(screen.getByRole('button', { name: 'Integrations' }))
+
+  expect(
+    screen.getByText('App-owned inventory snapshot'),
+  ).toBeInTheDocument()
+  expect(getInventoryMock).toHaveBeenCalledTimes(1)
+  expect(
+    screen
+      .getAllByRole('navigation', { name: 'Dashboard views' })[0]
+      ?.querySelectorAll('button'),
+  ).toHaveLength(5)
 })
 
 it('reloads both registries on entry after a successful import', async () => {

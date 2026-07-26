@@ -136,3 +136,44 @@ it('keeps every mobile navigation label visible in normal flow', () => {
     /(?:display:\s*none|visibility:\s*hidden|overflow:\s*hidden|text-overflow|white-space:\s*nowrap|position:\s*absolute)/,
   )
 })
+
+it('keeps workflow inventory rows shrinkable and wrap-safe', () => {
+  expect(declarationBlock('.n8n-inventory')).toMatch(/min-width:\s*0/)
+  expect(declarationBlock('.n8n-inventory__row')).toMatch(
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*auto\)/,
+  )
+  expect(declarationBlock('.n8n-inventory__row')).toMatch(
+    /min-width:\s*0/,
+  )
+  expect(declarationBlock('.n8n-inventory__name')).toMatch(
+    /overflow-wrap:\s*anywhere/,
+  )
+  expect(declarationBlock('.n8n-inventory__action')).toMatch(
+    /min-height:\s*44px/,
+  )
+  expect(
+    declarationBlock('.n8n-inventory__action:focus-visible'),
+  ).toMatch(/outline:\s*3px\s+solid/)
+})
+
+it('stacks inventory controls and rows at the exact mobile boundary', () => {
+  const mobile = mediaSlice(600)
+  expect(
+    declarationBlockFrom(mobile, '.n8n-inventory__action'),
+  ).toMatch(/width:\s*100%/)
+  expect(declarationBlockFrom(mobile, '.n8n-inventory__row')).toMatch(
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  )
+})
+
+it('adds no clipping or horizontal inventory scroller', () => {
+  const start = stylesheet.indexOf('.n8n-inventory {')
+  const end = stylesheet.indexOf('@media (max-width: 1080px)', start)
+  expect(start).toBeGreaterThanOrEqual(0)
+  expect(end).toBeGreaterThan(start)
+  const inventoryRules = stylesheet.slice(start, end)
+
+  expect(inventoryRules).not.toMatch(
+    /overflow-x|overflow:\s*hidden|white-space:\s*nowrap|text-overflow:\s*ellipsis/,
+  )
+})

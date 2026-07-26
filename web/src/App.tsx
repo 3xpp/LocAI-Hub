@@ -13,6 +13,7 @@ import { ModelList } from './components/ModelList'
 import { OllamaStatusCard } from './components/OllamaStatusCard'
 import { IntegrationsView } from './features/integrations/IntegrationsView'
 import { useIntegrations } from './features/integrations/useIntegrations'
+import { useN8nWorkflowInventory } from './features/integrations/useN8nWorkflowInventory'
 import { PromptRegistry } from './features/prompts/PromptRegistry'
 import { usePromptRegistry } from './features/prompts/usePromptRegistry'
 import { TransferView } from './features/transfer/TransferView'
@@ -56,6 +57,9 @@ export default function App() {
   const workflowRegistry = useWorkflowRegistry(activeView === 'workflows')
   const transfer = useTransfer(activeView === 'transfer')
   const integrations = useIntegrations(activeView === 'integrations')
+  const n8nWorkflowInventory = useN8nWorkflowInventory(
+    activeView === 'integrations',
+  )
 
   const refresh = useCallback(async () => {
     activeRequest.current?.abort()
@@ -233,7 +237,10 @@ export default function App() {
       ) : activeView === 'transfer' ? (
         <TransferView controller={transfer} />
       ) : (
-        <IntegrationsView controller={integrations} />
+        <IntegrationsView
+          controller={integrations}
+          inventoryController={n8nWorkflowInventory}
+        />
       )}
     </main>
   )

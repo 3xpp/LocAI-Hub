@@ -2812,3 +2812,50 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: harden n8n inventory controller lifecycle`
+
+## 2026-07-26 — Phase 2B accessible n8n inventory panel
+
+### Milestone
+
+- Added a dedicated `n8n workflow inventory` panel that consumes only the manual controller and
+  renders idle, loading, unconfigured, empty, populated, truncated, first-error, and stale states.
+  Rows expose only inert workflow names, textual Active/Inactive state, and semantic updated times;
+  no provider identity, total, origin, link, input, copy, detail, execution, or mutation affordance
+  was added.
+- Kept one inventory action mounted and keyboard-focusable through loading with `aria-disabled` and
+  a pending guard. The panel marks the complete request with `aria-busy`, uses one assertive
+  first-error alert, and owns a separate polite live region whose single replaceable announcement
+  follows controller settlement sequence without replaying an old snapshot on re-entry.
+- Kept credential-free health first and independent, renamed its action and pending state to
+  Refresh/Checking health, labelled its existing live region, narrowed its status-card boundary,
+  and added dual-path safety copy distinguishing health from the explicit backend-key inventory
+  request. The Integrations footer now identifies Phase 02B.
+- Mounted the inventory hook once at application scope so navigation aborts an active request while
+  preserving settled memory. Added navigation regressions for explicit-only loading, duplicate
+  activation, leave abort and ignored late settlement, re-entry persistence, all nine existing
+  Prompt/Workflow/Transfer guard paths, and the unchanged five-button view contract.
+- Added shrinkable three-column rows, anywhere name wrapping, 44-pixel focus-visible controls, and
+  exact 600-pixel stacking without clipping, ellipsis, nowrap, or horizontal scrolling. Existing
+  five-column tablet and three-plus-two mobile navigation rules remain unchanged.
+
+### TDD and validation
+
+- The first panel run produced the intended one failed suite and zero collected tests because
+  `./N8nWorkflowInventory` did not exist; the completed standalone panel then passed all 10 tests.
+- The first four-file composition run produced 14 expected failures and 46 passes across 60 tests
+  before Integrations/App wiring and responsive rules existed.
+- The wired matrix then passed 59 tests and exposed one CSS test-helper collision: the planned
+  grouped min-width selector was the first match for the row/name helpers, hiding their later
+  dedicated declarations. Splitting row and name into their explicit blocks retained the intended
+  CSS behavior and made all 60 focused tests pass.
+- Final `pnpm typecheck` and `pnpm lint` passed without diagnostics.
+- Final `make test-web` passed all 478 tests in 23 files.
+- Final `pnpm build` passed after transforming 63 modules and emitted only the ignored production
+  bundle.
+- No dependency, lockfile, API contract, schema, migration, authentication, Docker, deployment,
+  provider mutation, polling, retry, persistence, secret exposure, sixth view, or public-binding
+  change was made.
+
+### Commit
+
+- `feat: add n8n workflow inventory panel`
