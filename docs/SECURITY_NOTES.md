@@ -183,9 +183,50 @@ Phase 2A boundary.
 
 Do not expose the Hub to another network without authentication, authorization, TLS, restrictive
 network policy, and a new security review of both the local registries and this outbound boundary.
-API keys, workflow/execution inventory, generic targets, custom health paths, provider mutation, and
-Docker capabilities remain explicitly deferred. n8n HTTP health is an application-level observation,
-not authoritative container health.
+The implemented application still has no API key or workflow/execution inventory. A separately
+approved Phase 2B design now defines one future summary-only workflow inventory; implementation is
+pending. Generic targets, custom health paths, execution access, provider mutation, and Docker
+capabilities remain explicitly deferred. n8n HTTP health is an application-level observation, not
+authoritative container health.
+
+## Approved Phase 2B n8n inventory boundary — implementation pending
+
+Phase 2B is approved to add one optional `N8N_API_KEY` to the API process and use it only for fixed
+`GET /api/v1/workflows` requests against the existing validated `N8N_BASE_URL`. Until that work is
+implemented and accepted, the current application retains the Phase 2A no-key behavior described
+above.
+
+The approved implementation must preserve these constraints:
+
+- Phase 2A health stays credential-free, and the key never reaches `/healthz` or
+  `/healthz/readiness`.
+- Missing or invalid origin/key configuration creates zero provider requests.
+- Credentialed inventory requires HTTPS except for exact `localhost` or a canonical loopback IP
+  over HTTP. Homelab names, private addresses, Docker gateways, and `host.docker.internal` require
+  HTTPS even when credential-free Phase 2A health can use HTTP.
+- The browser can supply no target, method, path, filter, cursor, header, body, key, or timeout.
+- Provider pagination remains backend-only and is bounded to four sequential 50-item pages, 200
+  summaries, 8 MiB of identity-encoded response data, depth 64, and one five-second eligibility
+  deadline that hard-limits awaited I/O and forbids success after expiry.
+- Full provider workflow objects are treated as sensitive transient process data. Only name, active
+  state, and updated time may be projected into the Hub response.
+- IDs, cursors, nodes, connections, settings, pinned/static data, credential references, tags,
+  projects, provider headers/bodies/errors, and raw exceptions never reach browser output or logs.
+- Redirects are rejected, ambient proxy configuration is ignored, TLS verification stays enabled,
+  compressed responses are rejected, provider cookies are not reused, and there is no retry or
+  polling.
+- Inventory loading is explicit and manual. Results remain only in React memory; there is no
+  database or browser persistence.
+- Compose may forward a key only to API runtime. It must not reach web, Vite, build arguments, image
+  layers, labels, healthchecks, or committed files.
+- Enterprise operators should use a dedicated `workflow:list`-scoped key with expiration.
+  Non-Enterprise n8n keys have broader account capability, which materially increases the impact of
+  host or process compromise.
+
+The Hub remains unauthenticated. Any client that can reach its fixed inventory route can make the
+Hub use its configured key for that one operation and read up to 200 workflow summaries. This is an
+explicit trusted-localhost confused-deputy boundary, not authorization or rate limiting. Do not
+expose it to a LAN, public network, or untrusted reverse proxy.
 
 ## Dependency and build safety
 

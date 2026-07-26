@@ -250,3 +250,25 @@ another. Browser abort and generation ownership prevent stale results; there is 
 or observation history. Phase 2A adds no schema, persistence, API key, generic target, saved-link
 probe, Docker capability, provider mutation, or production/public exposure. Credentialed n8n
 inventory and container visibility require separate approved designs.
+
+## 2026-07-26 — Isolated summary-only n8n workflow inventory
+
+**Decision:** Implement Phase 2B through a separate credentialed n8n client and parameter-free Hub
+route. Load inventory only after an explicit browser action, traverse provider cursors entirely in
+the backend within fixed page/item/byte/depth/deadline limits, and return only workflow name, active
+state, updated time, and a local truncation flag.
+
+**Why:** n8n's workflow-list response contains full workflow definitions, while the Hub needs only a
+small operational summary. Keeping the credentialed adapter separate preserves Phase 2A's
+credential-free health boundary and makes key handling, amplification limits, and data projection
+independently auditable.
+
+**Consequence:** `N8N_API_KEY` will be optional API-process configuration, sent only as
+`X-N8N-API-KEY` to fixed `GET /api/v1/workflows` requests. Missing configuration makes zero
+provider requests. Credentialed requests require HTTPS except for exact `localhost` or a canonical
+loopback IP over HTTP; Phase 2A health retains its broader credential-free HTTP support. Raw
+workflow definitions, IDs, cursors, headers, and errors will not reach the browser, logs,
+persistence, or Phase 2A health requests. The Hub remains unauthenticated and loopback-only; any
+reachable local client can trigger and read the bounded summary, and broader network exposure
+remains prohibited. Implementation is pending the approved design's written review and
+implementation plan.

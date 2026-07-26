@@ -2454,3 +2454,62 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `test: record phase 2a acceptance validation`
+
+## 2026-07-26 — Approved Phase 2B n8n workflow inventory design
+
+### Milestone
+
+- Completed design-first brainstorming for the credentialed Phase 2B n8n inventory boundary.
+- Received explicit operator approval for backend-only `N8N_API_KEY` handling, one fixed read-only
+  workflow-list capability, summary-only name/active-state/updated-time projection, trusted-localhost
+  exposure, manual-only loading, bounded backend pagination, and pushing verified milestones.
+- Selected a separate inventory client, parameter-free Hub route, frontend contract/controller, and
+  Integrations panel so Phase 2A health remains credential-free.
+- Fixed one attempt at 50 items per page, four pages, 200 summaries, 8 MiB of identity-encoded
+  provider representation data, depth 64, cursor length 2,048, and a five-second eligibility
+  deadline with no successful result after expiry.
+- Based key, scope, workflow-list, schema, and cursor semantics on current official n8n
+  documentation and the exact upstream `734f9573952c3a639518bfd42e03b4d7aa9fd436` workflow API
+  specification.
+- Wrote the complete 1,214-line design in
+  `docs/superpowers/specs/2026-07-26-phase-2b-n8n-workflow-inventory-design.md` and updated README,
+  architecture decisions, and security notes to mark implementation pending.
+- Kept this documentation milestone free of product code, real-secret access, dependencies,
+  lockfile or schema changes, authentication changes, provider mutations, public/production
+  deployment changes, and application Docker capability.
+
+### Independent audits and corrections
+
+- Resolved the security audit's critical cleartext-key finding by requiring HTTPS except for exact
+  `localhost` or a canonical loopback IP over HTTP. The written review must explicitly accept the
+  residual loopback cleartext risk; homelab names, private addresses, Docker gateways, and
+  `host.docker.internal` require HTTPS for inventory.
+- Replaced an unimplementable claim of preempting synchronous JSON parsing with an exact monotonic
+  eligibility deadline: awaited I/O is hard-cancelled, bounded synchronous phases are checked
+  before/after, and no result or next page succeeds after expiry.
+- Closed compressed-payload amplification by requiring and accepting only identity encoding before
+  applying the 8 MiB representation-byte cap.
+- Defined strict UTF-8/JSON behavior for BOM, non-finite numbers, duplicate keys, depth, projected
+  lone surrogates, and the deliberate requirement for provider `active` and `updatedAt` fields.
+- Defined first-load and refresh abort transitions, ignored pending activation, snapshot-index row
+  identity for inert duplicate summaries, inventory-section `aria-busy`, and one dedicated combined
+  inventory settlement announcement.
+- All three focused audit rechecks confirmed their backend/security findings fixed, and the frontend
+  recheck confirmed all five lifecycle/accessibility findings fixed.
+
+### Self-review and validation
+
+- Verified no unresolved TODO, TBD, FIXME, open question, duplicate heading, or unbalanced fenced
+  block remains.
+- Verified every local documentation link exists and all four pinned official n8n references return
+  HTTP 200.
+- `git diff --check` passed, and focused searches confirmed the approved key, path, pagination,
+  projection, transport, lifecycle, and deferral boundaries agree across the design, README,
+  decisions, and security notes.
+- Kept `docs/FAILURES.md` unchanged because no new product or implementation incident occurred.
+- No application tests were required for this documentation-only milestone. Staged whitespace,
+  secret/artifact scope, and final status checks are required before commit and push.
+
+### Commit
+
+- `docs: add phase 2b n8n inventory design`

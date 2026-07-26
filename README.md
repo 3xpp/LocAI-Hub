@@ -375,6 +375,11 @@ unchanged. The supervisor and an independent fresh-shell audit confirmed complet
 file, database, browser-profile, container, network, and volume cleanup with clean Git. No real home
 n8n server was required.
 
+The summary-only, credentialed Phase 2B n8n Workflow Inventory design is approved. Implementation
+has not started. The approved boundary keeps health credential-free, loads inventory only after an
+explicit action, projects provider responses to name/active state/updated time, and retains the
+trusted-localhost deployment model.
+
 ## Security posture
 
 - Host development ports bind to 127.0.0.1.
@@ -434,8 +439,9 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
 4. **Phase 1C — Import/Export (complete):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
 5. **Phase 2 — Read-only integrations (in progress):** Phase 2A credential-free n8n health
-   observation is implemented and accepted. Credentialed n8n inventory (Phase 2B) and separately
-   designed container visibility (Phase 2C) remain deferred and require new design approval.
+   observation is implemented and accepted. The summary-only credentialed n8n inventory design
+   (Phase 2B) is approved with implementation pending. Container visibility (Phase 2C) remains
+   deferred and requires its own design approval.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
@@ -458,6 +464,7 @@ The project should be useful on a private localhost setup during Phases 1–2. S
 - [Phase 1C Import/Export implementation plan](docs/superpowers/plans/2026-07-18-phase-1c-import-export.md)
 - [Approved Phase 2A n8n Health Observation design](docs/superpowers/specs/2026-07-19-phase-2a-n8n-health-design.md)
 - [Phase 2A n8n Health Observation implementation plan](docs/superpowers/plans/2026-07-19-phase-2a-n8n-health.md)
+- [Approved Phase 2B n8n Workflow Inventory design](docs/superpowers/specs/2026-07-26-phase-2b-n8n-workflow-inventory-design.md)
 
 ## License
 
