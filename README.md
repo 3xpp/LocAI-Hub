@@ -456,10 +456,13 @@ unchanged. The supervisor and an independent fresh-shell audit confirmed complet
 file, database, browser-profile, container, network, and volume cleanup with clean Git. No real home
 n8n server was required.
 
-The summary-only, credentialed Phase 2B n8n Workflow Inventory is implemented; final exact-candidate
-acceptance is pending. The implemented boundary keeps health credential-free, loads inventory only
+Phase 2B final acceptance passed from exact candidate
+`8d948941f1754fe824f2092ded202c6c838e2a34`, completing the summary-only, credentialed n8n
+Workflow Inventory slice. The accepted boundary keeps health credential-free, loads inventory only
 after an explicit action, projects provider responses to name/active state/updated time, and retains
-the trusted-localhost deployment model.
+the trusted-localhost deployment model. The final fresh run passed 752 backend tests, 191 backend
+end-to-end tests, 478 frontend tests, the host and isolated Compose matrices, all nine Firefox
+viewports, the 25-point scope audit, and complete supervised cleanup.
 
 ## Security posture
 
@@ -523,10 +526,9 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 2. **Phase 1A — Prompt Registry (complete):** prompt CRUD, server search, canonical tags, validation, and a protected editing workflow.
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
 4. **Phase 1C — Import/Export (complete):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
-5. **Phase 2 — Read-only integrations (in progress):** Phase 2A credential-free n8n health
-   observation is implemented and accepted. Summary-only credentialed n8n inventory (Phase 2B) is
-   implemented with final exact-candidate acceptance pending. Container visibility (Phase 2C)
-   remains deferred and requires its own design approval.
+5. **Phase 2 — Read-only integrations (in progress):** Credential-free n8n health observation
+   (Phase 2A) and summary-only credentialed n8n inventory (Phase 2B) are implemented and accepted.
+   Container visibility (Phase 2C) remains deferred and requires its own design approval.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.

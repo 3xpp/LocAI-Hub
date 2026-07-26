@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-26
 
-**Status:** Implemented; final exact-candidate acceptance pending
+**Status:** Implemented and accepted
 
 **Sequence:** Phase 2B after accepted Phase 2A n8n health observation
 
@@ -30,6 +30,11 @@ and pushing verified milestones to GitHub.
 The operator completed the written review on 2026-07-26, confirmed that the design looked good,
 and thereby accepted the explicitly documented syntactic-loopback HTTP exception and its residual
 cleartext-on-loopback risk.
+
+**Acceptance:** Exact candidate `8d948941f1754fe824f2092ded202c6c838e2a34` passed the complete
+fresh final acceptance matrix on 2026-07-26. The candidate had already been pushed under the
+operator's explicit authorization; the acceptance run used read-only `git ls-remote` verification
+and performed no `git fetch`, push, or remote mutation.
 
 ## Summary
 

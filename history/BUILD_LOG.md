@@ -2999,3 +2999,111 @@ This journal records what is built, why it changes, and how each milestone is ve
   generated build output became tracked.
 - Complete exact-candidate acceptance remains pending from the committed corrective revision; this
   milestone does not claim final Phase 2B acceptance.
+
+## 2026-07-26 — Phase 2B exact-candidate acceptance and completion
+
+### Exact candidate and fresh gates
+
+- Completed the final isolated acceptance from clean, already-pushed candidate
+  `8d948941f1754fe824f2092ded202c6c838e2a34` with a private task root, an isolated Compose project,
+  six proven-free loopback ports, and one cleanup supervisor spanning every gate. The acceptance
+  run used read-only `git ls-remote` verification and performed no `git fetch`, push, or remote
+  mutation.
+- Preflight proved the candidate, local and remote `main`, and local and remote
+  `phase2b-n8n-inventory` all matched. The intentional nonzero supervisor self-test proved exact
+  failure-path cleanup before the successful run, and all 13 harness syntax, schema, privacy, and
+  self-tests passed.
+- All 12 repository gates passed: `make install`, `make format`, a clean formatting diff,
+  `make test`, `make test-e2e`, `make test-web`, `make lint`, `make typecheck`, the independent
+  Ruff format check, the production web build, both explicit-safe Compose image builds, and the
+  final clean diff.
+- The fresh gates passed 752 backend tests, 191 backend end-to-end tests, and 478 frontend tests
+  across 23 files. Ruff, ESLint, strict mypy across 38 backend source files, TypeScript, the
+  63-module Vite build, both committed images, and all lockfile/format stability checks passed.
+- All five focused and regression suites passed, including the 234-test Phase 2B backend suite,
+  46-test integrations API/access-log suite, the planned web invocation, and the Phase 0–2A
+  backend and web regressions. The private database passed upgrade to head, `alembic check`,
+  downgrade to `0001`, re-upgrade to head, and downgrade to base.
+- All nine tool-version probes and the private one-day TLS certificate setup passed. Acceptance
+  used the frozen toolchain recorded with the candidate: Git 2.43.0, uv 0.11.7, Python 3.14.4,
+  pytest 9.1.1, Ruff 0.15.21, mypy 1.20.2, Alembic 1.18.5, Node 20.20.2, pnpm 10.15.1,
+  Vitest 4.1.10, Vite 7.3.6, TypeScript 5.8.3, ESLint 9.39.4, Docker client/server 29.1.3,
+  Docker Compose 2.40.3, Firefox 152.0.5, and geckodriver 0.36.0.
+
+### Host, migration, and isolated Compose evidence
+
+- The 47-case host matrix covered missing and empty settings, invalid origins, HTTPS and exact
+  syntactic-loopback HTTP policy, access denial, redirects, provider failures, timeouts, strict
+  media/UTF-8/JSON/depth/size handling, cursor validation, repeated and maximum pagination,
+  truncation, later-page atomic failure, sensitive projection, method/path rejection, and the
+  separate credential-free health states.
+- Host logs and provider observations reconciled exactly to 63 inventory requests and 5 health
+  requests. Synthetic key, error, body, cookie, projection, cursor, and reason-phrase markers
+  remained absent from Hub responses and logs. The host integration-only routes never opened the
+  lazy SQLite engine, so the exact persistence audit correctly reported zero `host-api.db*`
+  artifacts.
+- The isolated Compose matrix passed 14 inventory modes through both the direct API and Vite proxy:
+  empty, populated, multipage, truncated, access denied, server failure, delayed body, malformed,
+  excessive depth, oversized chunked body, repeated cursor, reserved cursor, later-page malformed,
+  and sensitive projection.
+- Six direct and six proxied Phase 0–2A route smokes passed for health, Ollama status and models,
+  prompts, workflow links, and transfer export. Compose access reconciled exactly to 30 inventory
+  and 2 health requests, while the smoke sentinel saw zero n8n requests and zero writes.
+- Rendered and live inspection retained exactly the API and web services, loopback-only publishing,
+  API-only key forwarding, explicit safe origins, and no key in the web service, image history, or
+  build inputs. No n8n service, public bind, privilege, capability, Docker socket, SDK, Engine API,
+  CLI access, or application container inventory/control was introduced.
+
+### Real Firefox functional and viewport acceptance
+
+- One real Firefox session used `acceptInsecureCerts: false`, no configured proxy, no extension,
+  and only W3C WebDriver. It passed unconfigured, empty, populated, hostile duplicate-key,
+  truncated, replacement, stale-refresh, concurrent health/inventory, memory re-entry, refresh
+  abort, and first-load abort behavior.
+- Overview and Integrations entry produced zero automatic inventory calls; one explicit load
+  produced one call; duplicate pending activation coalesced; the idle window produced zero polling.
+  Prompt, Workflow Link, and prepared/pending Transfer guards blocked navigation with no inventory
+  request, while leaving Integrations required no confirmation.
+- Browser/API/provider reconciliation passed with 21 expected inventory resources: 19 completed API
+  access records plus 2 intentional unlogged aborts. The lifecycle also reconciled 15 health
+  resources, 23 provider inventory requests, and 27 total provider requests. Browser provider-origin
+  requests, cookies, storage changes, service workers, and marker persistence remained zero.
+- Firefox passed exact 320, 600, 601, 880, 881, 1024, 1080, 1081, and 1280 px CSS viewports at
+  900 px high. Measured dashboard widths were respectively 284, 480, 553, 680, 805, 948, 1004,
+  1005, and 1180 px.
+- Every viewport had 0 px document/body overflow, at least 44 px control height, at least a 3 px
+  focus outline, and 11 keyboard focus targets with fully unclipped horizontal and vertical focus
+  geometry. The 601 px `Refresh inventory` correction passed together with the mobile 3+2,
+  below-metadata tablet, and inline desktop navigation boundaries.
+- Session deletion succeeded, the disposable Firefox profile was removed, browser storage remained
+  unchanged at every viewport, and browser evidence passed its independent schema/privacy verifier.
+
+### Scope, harness, remote-state, and cleanup audit
+
+- The hardened 25-point scope audit passed. The candidate comparison contains 37 changed paths with
+  no dependency/lock, schema/migration, transfer, Dockerfile, or Vite/Vitest drift. Only
+  `.env.example` is tracked among environment files, and no generated dependency, build, cache,
+  database, log, profile, certificate, credential, secret, or acceptance artifact became tracked.
+- Source scans confirmed one fixed GET-only `/api/v1/workflows` provider operation and no workflow
+  detail, execution, write method, request-controlled target, custom path, redirect following,
+  ambient proxy trust, TLS bypass, browser key/origin, polling, retry, persistence, authentication,
+  public deployment, or application Docker capability.
+- Earlier attempts correctly stopped on acceptance-harness defects rather than weakening product
+  assertions: an over-escaped tracked-environment regex, negative scans that masked scanner errors,
+  recursive marker scans that read the browser FIFOs, and an assumption that the lazy host database
+  must exist. The reviewed final supervisor used normalized SHA-256
+  `6fc91ecbb25e026e412aa47356f874318a76e6ae347412bae672f59a4b8a7b9d`; these changes remained
+  operator-side and did not alter the product candidate.
+- The successful supervisor finished at `stage=complete` with original status 0 and cleanup status
+  0. Fresh-shell and independent checks proved the task root and browser profile absent, all six
+  ports free, zero task-owned process/container/network/volume remaining, preexisting Docker and
+  ignored dependency state preserved, and the acceptance worktree clean. A separate post-run check
+  also found the main worktree clean. The private four-file result copy was retained only through
+  evidence extraction and removed before commit.
+- Phase 2B is implemented and accepted. Container visibility and control remain deferred to a
+  separately brainstormed and approved Phase 2C; Phase 3 authentication/authorization also remains
+  deferred.
+
+### Commit
+
+- `test: record phase 2b acceptance validation`
