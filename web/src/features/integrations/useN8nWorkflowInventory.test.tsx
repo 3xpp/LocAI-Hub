@@ -45,6 +45,95 @@ const unconfigured: Extract<
   error: null,
 }
 
+type StaleFailureCase =
+  | {
+      name: string
+      kind: 'resolve'
+      failure: N8nWorkflowInventoryFailure
+      forbidden: readonly string[]
+    }
+  | {
+      name: string
+      kind: 'reject'
+      failure: Error
+      forbidden: readonly string[]
+    }
+
+const STALE_FAILURE_CASES: readonly StaleFailureCase[] = [
+  {
+    name: 'invalid configuration',
+    kind: 'resolve',
+    failure: {
+      state: 'invalid_configuration',
+      items: [],
+      truncated: false,
+      error: 'Invalid n8n inventory configuration',
+    },
+    forbidden: ['Invalid n8n inventory configuration'],
+  },
+  {
+    name: 'access denied',
+    kind: 'resolve',
+    failure: {
+      state: 'access_denied',
+      items: [],
+      truncated: false,
+      error: 'n8n denied workflow inventory access',
+    },
+    forbidden: ['n8n denied workflow inventory access'],
+  },
+  {
+    name: 'provider unavailable',
+    kind: 'resolve',
+    failure: {
+      state: 'unavailable',
+      items: [],
+      truncated: false,
+      error: 'n8n workflow inventory is unavailable',
+    },
+    forbidden: ['n8n workflow inventory is unavailable'],
+  },
+  {
+    name: 'provider timeout',
+    kind: 'resolve',
+    failure: {
+      state: 'timeout',
+      items: [],
+      truncated: false,
+      error: 'n8n workflow inventory timed out',
+    },
+    forbidden: ['n8n workflow inventory timed out'],
+  },
+  {
+    name: 'invalid provider response',
+    kind: 'resolve',
+    failure: {
+      state: 'invalid_response',
+      items: [],
+      truncated: false,
+      error: 'n8n returned an invalid workflow inventory',
+    },
+    forbidden: ['n8n returned an invalid workflow inventory'],
+  },
+  {
+    name: 'invalid Hub contract',
+    kind: 'reject',
+    failure: new N8nWorkflowInventoryContractError(
+      new Error('private contract cause marker'),
+    ),
+    forbidden: [
+      'Backend returned an invalid response',
+      'private contract cause marker',
+    ],
+  },
+  {
+    name: 'Hub transport failure',
+    kind: 'reject',
+    failure: new Error('private Hub transport marker'),
+    forbidden: ['private Hub transport marker'],
+  },
+]
+
 function deferred<T>() {
   let resolve!: (value: T) => void
   let reject!: (reason?: unknown) => void
@@ -82,6 +171,32 @@ describe('useN8nWorkflowInventory', () => {
     expect(getInventoryMock).not.toHaveBeenCalled()
   })
 
+  it('keeps both actions as no-ops while disabled and after unmount', () => {
+    const { result, unmount } = renderHook(() =>
+      useN8nWorkflowInventory(false),
+    )
+    const load = result.current.load
+    const refresh = result.current.refresh
+
+    expect(load()).toBeUndefined()
+    expect(refresh()).toBeUndefined()
+    expect(result.current).toMatchObject({
+      snapshot: null,
+      requestStatus: 'idle',
+      pending: false,
+      error: null,
+      stale: false,
+      lastLoaded: null,
+      settlementSequence: 0,
+    })
+    expect(getInventoryMock).not.toHaveBeenCalled()
+
+    unmount()
+    expect(load()).toBeUndefined()
+    expect(refresh()).toBeUndefined()
+    expect(getInventoryMock).not.toHaveBeenCalled()
+  })
+
   it('starts exactly one explicit load and ignores pending actions', async () => {
     const request = deferred<N8nWorkflowInventoryResponse>()
     getInventoryMock.mockReturnValueOnce(request.promise)
@@ -89,11 +204,17 @@ describe('useN8nWorkflowInventory', () => {
 
     act(() => {
       result.current.load()
+    })
+    const signal = getInventoryMock.mock.calls[0]?.[0]
+
+    act(() => {
       result.current.load()
       result.current.refresh()
     })
 
     expect(getInventoryMock).toHaveBeenCalledTimes(1)
+    expect(signal).toBeInstanceOf(AbortSignal)
+    expect(signal?.aborted).toBe(false)
     expect(result.current.pending).toBe(true)
     expect(result.current.requestStatus).toBe('loading')
     await act(async () => request.resolve(available))
@@ -171,6 +292,41 @@ describe('useN8nWorkflowInventory', () => {
       'private backend detail',
     )
   })
+
+  it.each(STALE_FAILURE_CASES)(
+    'retains only the prior available snapshot after $name',
+    async ({ kind, failure, forbidden }) => {
+      getInventoryMock.mockResolvedValueOnce(available)
+      if (kind === 'resolve') {
+        getInventoryMock.mockResolvedValueOnce(failure)
+      } else {
+        getInventoryMock.mockRejectedValueOnce(failure)
+      }
+      const { result } = renderHook(() => useN8nWorkflowInventory(true))
+
+      act(() => result.current.load())
+      await waitFor(() => expect(result.current.snapshot).toEqual(available))
+      const snapshot = result.current.snapshot
+      const loaded = result.current.lastLoaded
+      const sequence = result.current.settlementSequence
+
+      act(() => result.current.refresh())
+      await waitFor(() => expect(result.current.requestStatus).toBe('error'))
+
+      expect(result.current.snapshot).toBe(snapshot)
+      expect(result.current.lastLoaded).toBe(loaded)
+      expect(result.current.pending).toBe(false)
+      expect(result.current.stale).toBe(true)
+      expect(result.current.error).toBe(
+        'Refresh failed. Showing the last workflow inventory.',
+      )
+      expect(result.current.settlementSequence).toBe(sequence + 1)
+      const serialized = JSON.stringify(result.current)
+      for (const marker of forbidden) {
+        expect(serialized).not.toContain(marker)
+      }
+    },
+  )
 
   it.each([
     {
@@ -337,6 +493,82 @@ describe('useN8nWorkflowInventory', () => {
     expect(result.current.snapshot).toBe(settled.snapshot)
   })
 
+  it('restores the exact unconfigured state and ignores its late refresh', async () => {
+    const refresh = deferred<N8nWorkflowInventoryResponse>()
+    getInventoryMock
+      .mockResolvedValueOnce(unconfigured)
+      .mockReturnValueOnce(refresh.promise)
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useN8nWorkflowInventory(enabled),
+      { initialProps: { enabled: true } },
+    )
+
+    act(() => result.current.load())
+    await waitFor(() => expect(result.current.snapshot).toBe(unconfigured))
+    const settled = {
+      snapshot: result.current.snapshot,
+      requestStatus: result.current.requestStatus,
+      error: result.current.error,
+      stale: result.current.stale,
+      lastLoaded: result.current.lastLoaded,
+      settlementSequence: result.current.settlementSequence,
+    }
+    act(() => result.current.refresh())
+    const signal = getInventoryMock.mock.calls[1]?.[0]
+    rerender({ enabled: false })
+
+    expect(signal?.aborted).toBe(true)
+    expect(result.current).toMatchObject(settled)
+    expect(result.current.snapshot).toBe(settled.snapshot)
+    expect(result.current.lastLoaded).toBe(settled.lastLoaded)
+    expect(result.current.pending).toBe(false)
+
+    await act(async () => refresh.resolve(available))
+    expect(result.current).toMatchObject(settled)
+    expect(result.current.snapshot).toBe(settled.snapshot)
+    expect(result.current.lastLoaded).toBe(settled.lastLoaded)
+  })
+
+  it('restores the exact stale error and ignores its late retry', async () => {
+    const retry = deferred<N8nWorkflowInventoryResponse>()
+    getInventoryMock
+      .mockResolvedValueOnce(available)
+      .mockRejectedValueOnce(new Error('private stale setup marker'))
+      .mockReturnValueOnce(retry.promise)
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useN8nWorkflowInventory(enabled),
+      { initialProps: { enabled: true } },
+    )
+
+    act(() => result.current.load())
+    await waitFor(() => expect(result.current.snapshot).toBe(available))
+    act(() => result.current.refresh())
+    await waitFor(() => expect(result.current.stale).toBe(true))
+    const settled = {
+      snapshot: result.current.snapshot,
+      requestStatus: result.current.requestStatus,
+      error: result.current.error,
+      stale: result.current.stale,
+      lastLoaded: result.current.lastLoaded,
+      settlementSequence: result.current.settlementSequence,
+    }
+
+    act(() => result.current.refresh())
+    const signal = getInventoryMock.mock.calls[2]?.[0]
+    rerender({ enabled: false })
+
+    expect(signal?.aborted).toBe(true)
+    expect(result.current).toMatchObject(settled)
+    expect(result.current.snapshot).toBe(settled.snapshot)
+    expect(result.current.lastLoaded).toBe(settled.lastLoaded)
+    expect(result.current.pending).toBe(false)
+
+    await act(async () => retry.resolve(unconfigured))
+    expect(result.current).toMatchObject(settled)
+    expect(result.current.snapshot).toBe(settled.snapshot)
+    expect(result.current.lastLoaded).toBe(settled.lastLoaded)
+  })
+
   it('restores idle after a first-load navigation abort', async () => {
     const request = deferred<N8nWorkflowInventoryResponse>()
     getInventoryMock.mockReturnValueOnce(request.promise)
@@ -381,6 +613,58 @@ describe('useN8nWorkflowInventory', () => {
     expect(result.current.requestStatus).toBe('error')
     expect(result.current.error).toBe(priorError)
     expect(result.current.settlementSequence).toBe(priorSequence)
+  })
+
+  it('restores idle and ready states after spontaneous AbortError failures', async () => {
+    const firstAbortMarker = 'private first abort marker'
+    const refreshAbortMarker = 'private refresh abort marker'
+    getInventoryMock
+      .mockRejectedValueOnce(
+        new DOMException(firstAbortMarker, 'AbortError'),
+      )
+      .mockResolvedValueOnce(available)
+      .mockRejectedValueOnce(
+        new DOMException(refreshAbortMarker, 'AbortError'),
+      )
+    const { result } = renderHook(() => useN8nWorkflowInventory(true))
+
+    act(() => result.current.load())
+    const firstSignal = getInventoryMock.mock.calls[0]?.[0]
+    expect(result.current.requestStatus).toBe('loading')
+    expect(firstSignal?.aborted).toBe(false)
+    await waitFor(() => expect(result.current.requestStatus).toBe('idle'))
+    expect(result.current).toMatchObject({
+      snapshot: null,
+      pending: false,
+      error: null,
+      stale: false,
+      lastLoaded: null,
+      settlementSequence: 0,
+    })
+
+    act(() => result.current.load())
+    await waitFor(() => expect(result.current.snapshot).toBe(available))
+    const settled = {
+      snapshot: result.current.snapshot,
+      requestStatus: result.current.requestStatus,
+      error: result.current.error,
+      stale: result.current.stale,
+      lastLoaded: result.current.lastLoaded,
+      settlementSequence: result.current.settlementSequence,
+    }
+
+    act(() => result.current.refresh())
+    const refreshSignal = getInventoryMock.mock.calls[2]?.[0]
+    expect(result.current.requestStatus).toBe('loading')
+    expect(refreshSignal?.aborted).toBe(false)
+    await waitFor(() => expect(result.current.pending).toBe(false))
+
+    expect(result.current).toMatchObject(settled)
+    expect(result.current.snapshot).toBe(settled.snapshot)
+    expect(result.current.lastLoaded).toBe(settled.lastLoaded)
+    const serialized = JSON.stringify(result.current)
+    expect(serialized).not.toContain(firstAbortMarker)
+    expect(serialized).not.toContain(refreshAbortMarker)
   })
 
   it('aborts on unmount and ignores late completion', async () => {

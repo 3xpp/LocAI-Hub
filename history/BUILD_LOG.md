@@ -2781,3 +2781,34 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add manual n8n inventory controller`
+
+## 2026-07-26 — Phase 2B controller lifecycle review coverage
+
+### Milestone
+
+- Extended the manual inventory controller regressions without changing production behavior.
+  Disabled and post-unmount actions are proven no-ops, and duplicate pending activation retains the
+  original non-aborted request signal.
+- Added exact leave-and-late-settlement coverage for unconfigured and stale-error presentations,
+  plus first-load and refresh restoration when an `AbortError` occurs before the controller-owned
+  signal is aborted.
+- Parameterized failed refreshes across all five normalized provider states, a malformed Hub
+  contract, and a Hub transport error. Every case retains the identical prior available snapshot
+  and successful-load `Date`, advances one settlement, exposes only the fixed stale warning, and
+  stores none of the underlying failure copy.
+
+### Validation
+
+- The 11 review additions were green against the settled controller; the focused
+  `useN8nWorkflowInventory` suite passed all 34 tests in one file.
+- `pnpm typecheck` and `pnpm lint` passed without diagnostics.
+- `make test-web` passed all 461 tests in 22 files.
+- `pnpm build` passed after transforming 60 modules and emitted only the ignored production
+  bundle.
+- `git diff --check` passed. No production source, dependency, lockfile, configuration, persistence,
+  background-request behavior, or approved API contract changed, and no new product failure was
+  observed.
+
+### Commit
+
+- `test: harden n8n inventory controller lifecycle`
