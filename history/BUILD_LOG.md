@@ -2911,3 +2911,53 @@ This journal records what is built, why it changes, and how each milestone is ve
 - No dependency, lockfile, schema, migration, authentication, production deployment, public bind,
   provider mutation, polling, persistence, application Docker access, or architecture-decision
   change was made. No new product incident was observed, so `docs/FAILURES.md` remains unchanged.
+
+## 2026-07-26 — Phase 2B frozen integration candidate
+
+### Exact candidate and focused regression evidence
+
+- Ran the full integration gate and scope audit from clean, pushed implementation revision
+  `724048de0960d96f2ba8e1f07eaa22212c3a875c` on `phase2b-n8n-inventory`.
+- The focused Phase 2B backend unit suite passed 234 tests. The focused integrations API/access-log
+  suite passed 46 tests with the existing Starlette/httpx deprecation warning.
+- The literal planned focused-web invocation passed the full 478-test, 23-file suite because its
+  forwarded `--` prevented Vitest path filtering. A direct six-file Vitest run separately passed
+  the intended 127 focused tests.
+- The Phase 0–2A backend regression matrix passed 541 tests with the existing Starlette/httpx
+  deprecation warning. A direct 19-file Vitest run passed 397 Phase 0–2A web regression tests; the
+  literal planned invocation also passed the full 478-test suite.
+
+### Full repository gates
+
+- `make install` checked 56 locked backend packages and found the pnpm lockfile current. pnpm emitted
+  its existing ignored-esbuild-install-script warning without changing tracked files.
+- `make format` left all 63 backend files unchanged. `make test`, `make test-e2e`, and
+  `make test-web` passed 752, 191, and 478 tests respectively; the web suite covered 23 files.
+- Ruff and ESLint lint passed. Strict mypy passed across 38 backend source files, TypeScript checking
+  passed, and the independent Ruff format check confirmed all 63 backend files formatted.
+- The production web build transformed 63 modules. `make build` built both committed images with
+  explicit blank n8n values and repeated the successful web build. Compose emitted the already
+  documented missing-Buildx warning and successfully used the default Docker builder.
+- Formatting, installation, testing, and builds left no tracked or staged diff.
+
+### Migration, scope, and artifact audit
+
+- A private mode-0700 temporary SQLite database passed Alembic upgrade to head, check, downgrade to
+  `0001`, upgrade to head, and downgrade to base. Exactly
+  `0001_create_prompts.py` and `0002_create_workflow_links.py` exist; the exact database and task
+  root were removed and their absence verified.
+- The Phase 2B comparison contains 38 changed paths and zero drift in dependency manifests or locks,
+  database code or migrations, Dockerfiles, or Vite/Vitest configuration.
+- Manual and path-aware scans confirmed one fixed GET-only provider operation with validated
+  provider-owned cursors; no workflow detail, execution, mutation, request-controlled target,
+  browser origin/key, polling, retry, persistence, authentication, public bind, TLS bypass,
+  production profile, n8n service, or application Docker capability was introduced.
+- Compose remains exactly two loopback-published services. Only `.env.example` is tracked among
+  environment files, and zero generated dependency, build, cache, database, log, secret, profile,
+  or acceptance artifacts are tracked.
+- Toolchain evidence: Git 2.43.0, uv 0.11.7, Python 3.14.4, pytest 9.1.1, Ruff 0.15.21,
+  mypy 1.20.2, Alembic 1.18.5, Node 20.20.2, pnpm 10.15.1, Vitest 4.1.10, Vite 7.3.6,
+  TypeScript 5.8.3, ESLint 9.39.4, Docker client/server 29.1.3, Docker Compose 2.40.3,
+  Firefox 152.0.5, and geckodriver 0.36.0.
+- This entry freezes the implementation candidate for fresh exact-candidate acceptance; it does
+  not claim final Phase 2B acceptance.
