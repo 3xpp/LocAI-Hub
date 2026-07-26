@@ -154,6 +154,9 @@ it('keeps workflow inventory rows shrinkable and wrap-safe', () => {
   expect(
     declarationBlock('.n8n-inventory__action:focus-visible'),
   ).toMatch(/outline:\s*3px\s+solid/)
+  expect(
+    declarationBlock('.n8n-inventory__action:focus-visible'),
+  ).toMatch(/outline-offset:\s*-3px/)
 })
 
 it('stacks inventory controls and rows at the exact mobile boundary', () => {

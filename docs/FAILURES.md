@@ -433,3 +433,27 @@ has a null timestamp because its previous state has never completed successfully
 **Prevention:** Retain the unconfigured-success-then-failure regression and assert the exact prior
 `Date` object survives while the snapshot clears, stale remains false, and the fixed normalized
 failure copy is shown.
+
+## 2026-07-26 — Inventory action focus outline clipped at the 601 px boundary
+
+**Status:** Resolved
+
+**Observed:** Exact-candidate Firefox acceptance passed the 320 px and 600 px viewport cases, then
+failed the required focus-geometry assertion at 601 px. The `Refresh inventory` control retained
+its 44 px target and stayed inside the viewport at 851.2–895.2 px, but its 3 px outline plus 3 px
+positive offset extended to 901.2 px in the 900 px iframe. Document, body, inventory row, projection,
+and tablet-layout geometry all passed; the provider-count failure reported during teardown was only
+the expected consequence of stopping the nine-width loop early.
+
+**Cause:** The inventory action drew its focus outline outside the control. At 601 px Firefox did
+not scroll because the control's border box was already visible, leaving 1.2 px of the external
+outline beyond the viewport edge.
+
+**Resolution:** The inventory action keeps its visible 3 px focus outline and now uses a matching
+`-3px` inset offset. A real-Firefox diagnostic repeated the strict focus predicate at all nine
+required widths and kept the complete ring inside the viewport in every case. The diagnostic also
+proved that `scroll-margin` did not correct the 601 px or 1080 px cases.
+
+**Prevention:** Retain the exact inset-offset CSS regression and the strict 320, 600, 601, 880, 881,
+1024, 1080, 1081, and 1280 px Firefox focus matrix. Keep focus visibility tied to rendered outline
+geometry rather than relying on incidental native scrolling.

@@ -2994,7 +2994,7 @@ h2 {
 
 .n8n-inventory__action:focus-visible {
   outline: 3px solid var(--pending);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 
 .n8n-inventory__action[aria-disabled='true'] {

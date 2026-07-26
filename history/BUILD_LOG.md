@@ -2961,3 +2961,41 @@ This journal records what is built, why it changes, and how each milestone is ve
   Firefox 152.0.5, and geckodriver 0.36.0.
 - This entry freezes the implementation candidate for fresh exact-candidate acceptance; it does
   not claim final Phase 2B acceptance.
+
+## 2026-07-26 — Phase 2B 601 px focus-outline correction
+
+### Exact-candidate finding
+
+- The first complete acceptance attempt from frozen candidate
+  `bf7de728b6ff7a14cd596dafa6a49569ca061753` passed all 13 harness checks, all 12 repository gates,
+  focused and regression suites, the migration cycle, the host matrix, and isolated Compose
+  acceptance before Firefox stopped at the 601 px viewport.
+- A focused 600/601 Firefox diagnostic proved that every document, body, inventory, row, projection,
+  and breakpoint-layout predicate passed. Only `Refresh inventory` focus geometry failed: its
+  44 px border box ended at 895.2 px, while the 3 px outline and 3 px positive offset reached
+  901.2 px in the 900 px iframe. Cleanup still removed every task-owned process, container, network,
+  volume, browser profile, and temporary root.
+
+### Corrective milestone
+
+- Kept the inventory action's 3 px visible focus outline and changed only its offset to `-3px`, so
+  the complete ring is deterministically inset within the control instead of depending on Firefox
+  to scroll an already-visible border box.
+- Added a stylesheet regression requiring the exact inset offset alongside the existing 44 px
+  target and 3 px outline assertions. No component behavior, dependency, schema, authentication,
+  deployment, provider, persistence, or Docker boundary changed.
+- A non-mutating real-Firefox variant probe repeated the strict focus predicate at all nine required
+  widths: 320, 600, 601, 880, 881, 1024, 1080, 1081, and 1280 px. The corrected style passed every
+  width. A `scroll-margin` comparison did not fix the 601 px or 1080 px cases, confirming the inset
+  ring as the deterministic correction. All diagnostic resources reconciled to zero.
+
+### Corrective validation
+
+- The focused stylesheet suite passed 9 tests.
+- `make test-web` passed 478 tests across 23 files.
+- `make lint` passed Ruff and ESLint. `make typecheck` passed strict mypy across 38 backend source
+  files and TypeScript project checking.
+- The production web build transformed 63 modules successfully. `git diff --check` passed, and no
+  generated build output became tracked.
+- Complete exact-candidate acceptance remains pending from the committed corrective revision; this
+  milestone does not claim final Phase 2B acceptance.
