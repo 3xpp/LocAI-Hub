@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-26
 
-**Status:** Conversation-approved; written review pending; implementation not started
+**Status:** Approved after written review; implementation not started
 
 **Sequence:** Phase 2B after accepted Phase 2A n8n health observation
 
@@ -26,6 +26,10 @@ operator selected the isolated client and Integrations-panel approach and approv
 projection, trusted-localhost exposure, manual-only loading, bounded backend pagination, fixed safe
 failure states, verification scope, local Compose API-only key forwarding, conventional commits,
 and pushing verified milestones to GitHub.
+
+The operator completed the written review on 2026-07-26, confirmed that the design looked good,
+and thereby accepted the explicitly documented syntactic-loopback HTTP exception and its residual
+cleartext-on-loopback risk.
 
 ## Summary
 

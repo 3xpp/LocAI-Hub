@@ -2513,3 +2513,41 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `docs: add phase 2b n8n inventory design`
+
+## 2026-07-26 — Phase 2B implementation plan and written design approval
+
+### Milestone
+
+- Received the operator's written approval of the complete Phase 2B design, including the explicit
+  syntactic-loopback HTTP exception and documented residual cleartext-on-loopback risk.
+- Mapped the accepted design onto the current backend, frontend, infrastructure, test, documentation,
+  Git, and acceptance-harness boundaries in a dedicated Phase 2B worktree.
+- Wrote the 6,136-line test-driven implementation plan at
+  `docs/superpowers/plans/2026-07-26-phase-2b-n8n-workflow-inventory.md`.
+- Split delivery into eight independently verified conventional commits: inventory client, strict
+  Hub API, strict browser contract, manual controller, accessible panel, API-only configuration and
+  documentation, exact-candidate freeze, and fresh acceptance evidence.
+- Kept the plan within the approved no-dependency, no-schema, no-authentication, no-provider-mutation,
+  no-generic-target, no-polling, no-persistence, no-public-deployment, and no-application-Docker
+  boundaries.
+
+### Planning decisions and self-review
+
+- Fixed the previously open media-type interpretation to absent charset or one case-insensitive
+  `charset=utf-8` token or correctly paired quoted value, consistent with mandatory strict UTF-8
+  decoding.
+- Kept the credentialed client independent from Phase 2A health and specified end-to-end type,
+  state, error, request, projection, lifecycle, accessibility, and cleanup contracts.
+- Specified that isolated Compose acceptance places the HTTP sentinel inside the API container's
+  network namespace so the provider is genuinely `127.0.0.1`; a container hostname would correctly
+  fail the Phase 2B transport policy.
+- Mapped every design section and all 25 acceptance criteria to Tasks 1–8, checked type/property
+  names across backend and frontend, and removed incomplete placeholders.
+- Confirmed 224 balanced Markdown backtick fences, 77 bite-sized implementation checkboxes, an empty
+  unresolved-placeholder scan, and a passing `git diff --check`.
+- No application test was required for this documentation-only milestone; all product gates are
+  explicitly placed before their corresponding implementation commits.
+
+### Commit
+
+- `docs: add phase 2b implementation plan`
