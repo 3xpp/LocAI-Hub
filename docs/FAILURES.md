@@ -415,3 +415,21 @@ their prior behavior. The inventory wrapper now preserves signal-owned errors an
 **Prevention:** Retain regressions proving HTTP 201 becomes `BackendHttpError` without invoking
 `response.json()`, and proving both DOM and signal-owned abort errors survive even when their message
 collides with the fixed contract-error copy.
+
+## 2026-07-26 — Inventory refresh failure discarded an unconfigured load timestamp
+
+**Status:** Resolved
+
+**Observed:** Task 4 review loaded a valid unconfigured inventory snapshot and then returned a
+normalized unavailable result on explicit refresh. The controller correctly exposed no rows and no
+stale available snapshot, but changed the prior successful `lastLoaded` value to `null`.
+
+**Cause:** The no-available-snapshot failure branch hard-coded `lastLoaded: null` instead of
+preserving the previous settled state’s successful-load timestamp.
+
+**Resolution:** The failure branch now retains `previous.lastLoaded`. A true first-load failure still
+has a null timestamp because its previous state has never completed successfully.
+
+**Prevention:** Retain the unconfigured-success-then-failure regression and assert the exact prior
+`Date` object survives while the snapshot clears, stale remains false, and the fixed normalized
+failure copy is shown.

@@ -2736,3 +2736,48 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add n8n inventory frontend contract`
+
+## 2026-07-26 — Phase 2B manual n8n inventory controller
+
+### Milestone
+
+- Added the application-scoped `useN8nWorkflowInventory` controller with explicit `load()` and
+  `refresh()` actions, one active AbortController, monotonic request generations, and no request on
+  mount, enable, re-entry, or React StrictMode replay.
+- Added atomic `idle`, `loading`, `ready`, and `error` lifecycle state with available or unconfigured
+  snapshots, local successful-load time, stale presentation, and a settlement sequence for stable
+  view announcements.
+- Pending duplicate activation is ignored without aborting or replacing the active request. Leaving
+  the view restores the exact prior idle, ready, unconfigured, or error presentation; unmount and
+  generation ownership prevent late completion from publishing.
+- Successful available and unconfigured results replace the snapshot. Configuration/provider/Hub
+  failures expose only fixed copy; a failed refresh after available data retains the exact prior
+  snapshot and time as stale, while a failure after unconfigured clears rows but preserves the prior
+  successful-load time.
+- Added exhaustive controller regressions for all normalized states, empty/populated/truncated
+  success, stale replacement, abort restoration, late-generation ownership, no entry request,
+  duplicate activation, no timer retry/polling, and no local/session/Cache/IndexedDB/service-worker,
+  clipboard, or URL-history writes.
+
+### TDD and validation
+
+- The first focused run produced the intended one failed suite and zero collected tests because
+  `./useN8nWorkflowInventory` did not exist.
+- The complete plan matrix initially passed 22 controller tests.
+- Review then reproduced the unconfigured-refresh timestamp defect: the new 23-test run produced one
+  failure and 22 passes because `lastLoaded` became null. Preserving `previous.lastLoaded` made all
+  23 tests pass; the factual defect and resolution are recorded in `docs/FAILURES.md`.
+- The first mandatory typecheck rejected the plan sample’s tuple-parameterized normalized-failure
+  test because independent state/error unions lost their discriminated correlation. Rewriting the
+  table as complete `N8nWorkflowInventoryFailure` objects made every fixed pair compile without a
+  cast; controller behavior was unchanged.
+- Final `pnpm typecheck` and `pnpm lint` passed without diagnostics.
+- Final `make test-web` passed 450 tests in 22 files.
+- Final `pnpm build` passed after transforming 60 modules and emitted only the ignored production
+  bundle.
+- No dependency, lockfile, API contract, schema, migration, authentication, Docker, deployment,
+  provider mutation, background polling, retry, persistence, or public-binding change was made.
+
+### Commit
+
+- `feat: add manual n8n inventory controller`
