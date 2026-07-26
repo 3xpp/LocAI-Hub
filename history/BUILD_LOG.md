@@ -2686,3 +2686,53 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: expose n8n workflow inventory api`
+
+## 2026-07-26 — Phase 2B strict frontend inventory contract
+
+### Milestone
+
+- Added a dedicated browser contract for only the fixed relative
+  `GET /api/integrations/n8n/workflows` Hub route. The request forwards only an optional
+  `AbortSignal`; it accepts no provider origin, key, ID, cursor, query, body, custom header, or
+  browser storage input, and it requires exact HTTP 200 before reading the response body.
+- Added an opt-in exact-status check to the shared JSON request helper. Existing callers omit the
+  option and keep their prior success-status behavior; only workflow inventory selects exact 200.
+- Added exact discriminated response types for available, unconfigured, invalid-configuration,
+  access-denied, unavailable, timeout, and invalid-response results with only workflow name, active
+  state, normalized updated time, and local truncation state.
+- Added strict root/item key, item-count, Unicode-scalar name, control/lone-surrogate, exact boolean,
+  canonical UTC timestamp, fixed error, and cross-state validation. Invalid Hub JSON and contracts
+  become the dedicated fixed contract error while HTTP, network, and abort outcomes remain distinct.
+- Added regressions for all seven normalized states, 200-item and 256-scalar bounds, duplicate and
+  hostile-looking inert names, malformed/extra/private fields, invalid timestamps and state
+  combinations, exact-200/no-body-read enforcement, fetch/body abort identity including error-copy
+  collisions, and proof that URL-looking workflow names create no provider or second browser
+  request.
+
+### TDD and validation
+
+- The isolated worktree initially had no installed frontend dependency directory, so the first
+  focused command stopped before collection with `vitest` unavailable. A lockfile-frozen offline
+  pnpm 10.15.1 install restored only ignored generated dependencies and changed no manifest or
+  lockfile.
+- The integrated worktree likewise had no generated dependency directory. Its first verification
+  stopped before collection, then the same frozen offline install restored 260 cached packages.
+  A root-scoped `pnpm --dir web build` subsequently resolved the ambient pnpm 11 before entering the
+  package and failed under Node 20; rerunning `pnpm build` from `web/` selected the declared pnpm
+  10.15.1 and passed. Neither setup correction changed tracked dependency files.
+- The repeated red command then produced the intended one failed suite and zero collected tests
+  because `./n8nWorkflowInventory` did not exist.
+- Independent review reproduced exact-status and abort-collision defects. The added red regressions
+  produced two failures and 31 passes: HTTP 201 returned a valid body, and a signal-owned abort whose
+  error copy matched the fixed contract message was reclassified.
+- `pnpm exec vitest run src/api/n8nWorkflowInventory.test.ts` passed 33 tests in one file after the
+  exact-status and abort-first corrections.
+- `pnpm typecheck` and `pnpm lint` passed without diagnostics.
+- `pnpm test` and the independently repeated `make test-web` each passed 427 tests in 21 files.
+- `pnpm build` passed after transforming 60 modules and emitted the ignored production bundle.
+- No dependency manifest, lockfile, database schema, migration, authentication, Docker, deployment,
+  provider mutation, polling, retry, persistence, or public-binding change was made.
+
+### Commit
+
+- `feat: add n8n inventory frontend contract`

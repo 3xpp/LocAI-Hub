@@ -39,6 +39,7 @@ export interface JsonRequestOptions {
   method?: 'GET' | 'POST' | 'PUT'
   body?: unknown
   signal?: AbortSignal
+  expectedStatus?: number
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -145,6 +146,12 @@ export async function requestJson<T>(
   options?: JsonRequestOptions,
 ): Promise<T> {
   const response = await fetchBackend(path, options)
+  if (
+    options?.expectedStatus !== undefined &&
+    response.status !== options.expectedStatus
+  ) {
+    throw new BackendHttpError(response.status)
+  }
 
   let payload: unknown
   try {

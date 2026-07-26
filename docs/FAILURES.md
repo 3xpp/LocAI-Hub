@@ -394,3 +394,24 @@ Uvicorn. Cancellation and every unrelated sibling path remain outside the bounda
 unrelated-path, and dual Uvicorn access/error-log regressions. Synthetic key, provider-body, cursor,
 workflow-name, query, and programming-error markers must remain absent from both log streams and
 all fixed error bodies.
+
+## 2026-07-26 — Frontend inventory accepted non-200 success and reclassified abort collisions
+
+**Status:** Resolved
+
+**Observed:** Independent Task 3 review returned a valid inventory payload with HTTP 201 and observed
+the browser contract accept it after reading the body, even though the route requires exact HTTP
+200. The same review used an abort whose error copy matched `Backend returned an invalid response`;
+the inventory wrapper replaced the signal-owned error with `N8nWorkflowInventoryContractError`.
+
+**Cause:** The shared JSON helper rejected only responses outside the broad `Response.ok` range, and
+the inventory wrapper matched the generic error copy before checking signal or DOM abort identity.
+
+**Resolution:** The shared helper now supports an optional exact expected status and checks it before
+body parsing. Inventory alone requests exact 200, while existing callers omit the option and keep
+their prior behavior. The inventory wrapper now preserves signal-owned errors and DOM
+`AbortError` identity before message-based contract conversion.
+
+**Prevention:** Retain regressions proving HTTP 201 becomes `BackendHttpError` without invoking
+`response.json()`, and proving both DOM and signal-owned abort errors survive even when their message
+collides with the fixed contract-error copy.
