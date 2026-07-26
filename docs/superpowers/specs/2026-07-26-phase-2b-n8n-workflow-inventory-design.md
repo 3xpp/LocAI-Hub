@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-26
 
-**Status:** Approved after written review; implementation not started
+**Status:** Implemented; final exact-candidate acceptance pending
 
 **Sequence:** Phase 2B after accepted Phase 2A n8n health observation
 

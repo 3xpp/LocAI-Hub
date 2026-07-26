@@ -34,6 +34,11 @@ Ask before:
 
 Maintenance strictly inside the approved Phase 2A design may use the existing credential-free,
 fixed-path n8n health client. This exception does not approve any broader provider capability.
+Maintenance strictly inside the approved Phase 2B design may use the optional API-process-only
+`N8N_API_KEY` for the existing fixed `GET /api/v1/workflows` summary inventory. This exception
+does not approve workflow details, executions, additional provider resources, mutations,
+request-controlled targets or filters, new paths, polling, persistence, authentication changes,
+network exposure, production configuration, or Docker capability.
 The explicitly isolated operator-side Compose acceptance may use a local Docker Engine, but the
 application and its containers must never receive Docker access.
 

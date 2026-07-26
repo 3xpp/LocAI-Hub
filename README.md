@@ -7,15 +7,17 @@ A local-first control room for Ollama, reusable prompts, workflow references, an
 > reveal, change, or permanently delete local data. Transfer exports include every Prompt and full
 > Workflow Link URL in one downloaded JSON file, while confirmed imports append records. Saved URLs
 > may include sensitive query strings or fragments, and n8n health responses disclose the configured
-> service origin and availability. Protect exported files and local topology like the database, and
-> do not expose the dashboard or API to a public or untrusted network without authentication,
-> authorization, TLS, and a new deployment security review.
+> service origin and availability. Every client that can reach the unauthenticated inventory route
+> can also trigger the configured key-backed operation and read up to 200 workflow summaries.
+> Protect exported files, local topology, and workflow metadata like the database, and do not expose
+> the dashboard or API to a public or untrusted network without authentication, authorization, TLS,
+> and a new deployment security review.
 
 ## What it does
 
 Local AI setups tend to spread across terminals, Docker Compose projects, prompt notes, n8n tabs, and one-off dashboards. Local AI Workflow Hub starts consolidating that operational picture without turning a personal machine into a remote administration service.
 
-Phase 2A provides:
+Phase 2B provides:
 
 - backend service health;
 - safe Ollama online/offline status;
@@ -37,16 +39,22 @@ Phase 2A provides:
 - optional, credential-free n8n liveness and readiness observation through two fixed health paths;
 - a fifth Integrations view with normalized unconfigured, online, degraded, and offline states,
   one observation on entry, and explicit manual refresh without polling or retries;
+- an explicitly loaded n8n workflow inventory that exposes only name, Active/Inactive state,
+  and UTC update time through a backend-only key;
+- bounded backend pagination of at most four 50-item pages, 200 summaries, 8 MiB of identity
+  JSON, depth 64, and one five-second eligibility deadline;
 - a responsive React dashboard;
 - repeatable uv, pnpm, Make, and Docker Compose workflows;
 - backend and frontend behavior tests that do not require a live Ollama or n8n server.
 
-It remains intentionally read-only around Ollama and n8n and does not expose Docker, credentials,
-workflow or execution inventory, shell, model-management, prompt-execution, provider
-synchronization, or cloud-AI controls. Workflow links remain inert stored references rather than
-health targets. Phase 1C final acceptance passed from corrective commit `7b5ec9f`, completing Phase
-1. Phase 2A final acceptance passed from exact candidate `55de311`, completing the credential-free
-n8n health-observation slice without requiring a live n8n server.
+It remains read-only around Ollama and n8n. The optional n8n key is held only by the API process
+for one fixed workflow-list operation; the Hub still exposes no executions, workflow details,
+IDs, cursors, provider mutations, Docker capability, shell, model-management,
+prompt-execution, provider synchronization, or cloud-AI controls. Workflow links remain inert
+stored references rather than health targets. Phase 1C final acceptance passed from corrective
+commit `7b5ec9f`, completing Phase 1. Phase 2A final acceptance passed from exact candidate
+`55de311`, completing the credential-free n8n health-observation slice without requiring a live
+n8n server.
 
 ## Architecture
 
@@ -62,6 +70,9 @@ FastAPI (127.0.0.1:8000)
   |-- read-only Ollama client --> Ollama /api/tags
   |-- GET /api/integrations/n8n/status
   |       '-- configured origin --> fixed n8n /healthz and /healthz/readiness
+  |-- GET /api/integrations/n8n/workflows
+  |       '-- backend-only key --> fixed n8n /api/v1/workflows
+  |                              '-- name + active + updated time only
   |-- prompt CRUD/search API
   |-- workflow-link CRUD/search API
   '-- transfer export/preview/import API
@@ -110,7 +121,7 @@ store and delete it with appropriate operating-system protections.
 - [pnpm](https://pnpm.io/) 10.x
 - Docker Engine with Docker Compose v2 (required only for the Docker quickstart and image build)
 - Optional: [Ollama](https://ollama.com/) for live status and model data
-- Optional: a self-hosted n8n instance for live liveness and readiness observation
+- Optional: a self-hosted n8n instance for live health and workflow inventory observation
 
 The repository pins pnpm 10.15.1 through Corepack. If pnpm is not already available, enable Corepack using the installation method appropriate for your Node.js installation.
 
@@ -121,7 +132,7 @@ Ollama state when Ollama is unavailable. The explicit assignments prevent ambien
 changing this quickstart, and `/dev/null` prevents Compose from loading a repository-local env file.
 
 ~~~bash
-N8N_BASE_URL= OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --env-file /dev/null up --build
+N8N_API_KEY= N8N_BASE_URL= OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --env-file /dev/null up --build
 ~~~
 
 Open:
@@ -133,13 +144,13 @@ Open:
 Stop the stack:
 
 ~~~bash
-N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null down
+N8N_API_KEY= N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null down
 ~~~
 
 Compose retains the SQLite and dependency volumes. To deliberately erase all Compose-managed project data:
 
 ~~~bash
-N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null down --volumes
+N8N_API_KEY= N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null down --volumes
 ~~~
 
 At startup, the API applies migrations and synchronizes its uv environment, while the web service
@@ -154,12 +165,22 @@ To observe n8n from Compose, provide an explicit credential-free origin reachabl
 container:
 
 ~~~bash
-N8N_BASE_URL=http://host.docker.internal:5678 OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --env-file /dev/null up --build
+N8N_API_KEY= N8N_BASE_URL=http://host.docker.internal:5678 OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --env-file /dev/null up --build
 ~~~
 
 The configured n8n origin must be reachable from the API container. A service bound only to host
 localhost may not accept Docker-bridge traffic. Changing n8n's network bind can increase exposure;
 apply host firewall rules and do not publish n8n to an untrusted network.
+
+Credentialed workflow inventory from Compose requires an HTTPS provider origin:
+
+~~~bash
+N8N_API_KEY=replace-with-operator-managed-key N8N_BASE_URL=https://n8n.internal.example OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose --env-file /dev/null up --build
+~~~
+
+`replace-with-operator-managed-key` and `https://n8n.internal.example` are non-working examples.
+Supply the real key and origin through the process environment or an appropriate external secret
+manager, never through a tracked file.
 
 The committed `.env.example` is a reference for the non-Docker localhost workflow. These Compose
 commands intentionally use process assignments plus `/dev/null`; they do not depend on `.env`.
@@ -187,8 +208,17 @@ make dev-api
 To observe an n8n process available on the same host, start the API with its exact root origin:
 
 ~~~bash
-N8N_BASE_URL=http://localhost:5678 make dev-api
+N8N_API_KEY= N8N_BASE_URL=http://localhost:5678 make dev-api
 ~~~
+
+To enable manual workflow inventory for that exact loopback origin, supply the API process with an
+operator-managed key:
+
+~~~bash
+N8N_API_KEY=replace-with-operator-managed-key N8N_BASE_URL=http://localhost:5678 make dev-api
+~~~
+
+The placeholder is not a working credential. Supply the real value outside tracked files.
 
 In a second terminal, start the dashboard:
 
@@ -212,13 +242,23 @@ Docker Compose follows normal Compose behavior and may load an ignored local .en
 | DATABASE_URL | sqlite:///./local-ai-hub.db | SQLAlchemy connection URL. The local path is relative to backend/. Compose overrides it with the named /data volume. |
 | OLLAMA_BASE_URL | http://localhost:11434 | Ollama HTTP origin used for read-only tags/status requests. |
 | N8N_BASE_URL | no default | Optional n8n HTTP(S) root origin. Missing or exact empty means unconfigured. Credentials, query, fragment, custom path, and ambiguous noncanonical numeric hosts are rejected. |
+| N8N_API_KEY | no default | Optional API-process-only n8n key for the fixed workflow inventory. Missing or exact empty means unconfigured. The value is never returned, persisted, or sent to the web service. |
 
 OLLAMA_BASE_URL accepts only a credential-free HTTP or HTTPS origin with a host and root path. User information, query strings, fragments, and non-root paths are rejected and never reflected by the API.
 
 N8N_BASE_URL accepts one credential-free HTTP(S) root origin and canonicalizes its displayed and
-requested origin. Malformed or ambiguous numeric forms fail closed. The backend uses the result only
-for fixed GET requests to `/healthz` and, after liveness passes, `/healthz/readiness`. Custom health
-paths are not supported. Invalid raw configuration is never reflected.
+requested origin. Malformed or ambiguous numeric forms fail closed. The credential-free health
+client uses the result only for fixed GET requests to `/healthz` and, after liveness passes,
+`/healthz/readiness`; the separate credentialed inventory client uses it only for fixed
+`GET /api/v1/workflows`. Custom paths are not supported. Invalid raw configuration is never
+reflected.
+
+Credentialed inventory accepts canonical HTTPS origins. Plain HTTP is allowed only for exact
+`localhost` or a canonical loopback IP; homelab names, private addresses,
+`host.docker.internal`, Docker gateways, and container names require HTTPS even though
+credential-free health may observe them over HTTP. Enterprise operators should use a dedicated
+`workflow:list`-scoped key with an expiration. Non-Enterprise n8n keys have full account
+capability, so isolate and rotate them accordingly.
 
 ## API
 
@@ -228,6 +268,7 @@ paths are not supported. Invalid raw configuration is never reflected.
 | GET | /api/ollama/status | Ollama reachability, safe configured-origin display, and normalized error. |
 | GET | /api/ollama/models | Normalized name, modification time, and byte size for installed models. |
 | GET | /api/integrations/n8n/status | Credential-free n8n liveness/readiness observation normalized to `unconfigured`, `online`, `degraded`, or `offline`. |
+| GET | /api/integrations/n8n/workflows | Parameter-free manual inventory normalized to seven safe states; returns only name, active, updated_at, and a local truncation flag. |
 | GET | /api/prompts | Server-filtered prompt summaries. Supports `q`, `tag`, `limit`, and `offset`. |
 | POST | /api/prompts | Create one prompt and return its canonical full representation. |
 | GET | /api/prompts/{prompt_id} | Retrieve one prompt with full raw-text content. |
@@ -254,16 +295,56 @@ Ollama being offline is an expected HTTP 200 response:
 
 A reachable Ollama instance with no models returns an empty models array and a null error. An offline or invalid configuration returns an empty array with a non-null safe error.
 
-The n8n endpoint always returns a normalized HTTP 200 provider state:
+The n8n health endpoint always returns a normalized HTTP 200 provider state:
 
 - `unconfigured`: no origin is configured and no provider request is made;
 - `online`: liveness and readiness both returned HTTP 200;
 - `degraded`: liveness passed but readiness failed;
 - `offline`: configuration is invalid, liveness could not connect, or liveness returned non-200.
 
-Opening **Integrations** performs one observation. **Refresh n8n** performs another explicit
-observation. Overview and the other views make no n8n request, and there is no background polling,
-automatic retry, persisted observation history, or browser-direct provider request.
+An available workflow inventory response is:
+
+~~~json
+{
+  "state": "available",
+  "items": [
+    {
+      "name": "Daily local backup",
+      "active": true,
+      "updated_at": "2026-07-26T08:30:00Z"
+    },
+    {
+      "name": "Draft document pipeline",
+      "active": false,
+      "updated_at": "2026-07-25T18:15:00Z"
+    }
+  ],
+  "truncated": false,
+  "error": null
+}
+~~~
+
+An access-denied response is:
+
+~~~json
+{
+  "state": "access_denied",
+  "items": [],
+  "truncated": false,
+  "error": "n8n denied workflow inventory access"
+}
+~~~
+
+The seven normalized inventory states—`unconfigured`, `available`, `invalid_configuration`,
+`access_denied`, `unavailable`, `timeout`, and `invalid_response`—all return HTTP 200. Hub
+transport or response-contract failures remain browser errors rather than normalized provider
+states.
+
+Opening **Integrations** performs only the credential-free health observation. **Refresh
+health** repeats it. Workflow inventory starts only after **Load workflows**; **Refresh
+inventory** repeats that separate request. Inventory has no entry load, polling, retry,
+persistence, provider-origin browser request, or background refresh. A failed refresh retains
+only the earlier in-memory successful summary and marks it stale.
 
 Prompt titles are trimmed and prompt content remains raw text. Tags are whitespace-normalized,
 case-folded, deduplicated canonical values; commas and control characters are rejected. A list search
@@ -375,22 +456,25 @@ unchanged. The supervisor and an independent fresh-shell audit confirmed complet
 file, database, browser-profile, container, network, and volume cleanup with clean Git. No real home
 n8n server was required.
 
-The summary-only, credentialed Phase 2B n8n Workflow Inventory design is approved. Implementation
-has not started. The approved boundary keeps health credential-free, loads inventory only after an
-explicit action, projects provider responses to name/active state/updated time, and retains the
-trusted-localhost deployment model.
+The summary-only, credentialed Phase 2B n8n Workflow Inventory is implemented; final exact-candidate
+acceptance is pending. The implemented boundary keeps health credential-free, loads inventory only
+after an explicit action, projects provider responses to name/active state/updated time, and retains
+the trusted-localhost deployment model.
 
 ## Security posture
 
 - Host development ports bind to 127.0.0.1.
 - There is no authentication.
 - There is no Docker socket or Docker SDK access.
-- There is no n8n API-key, credentialed inventory, workflow/execution access, or provider mutation.
-- The backend has one configuration-selected outbound n8n surface. It validates a credential-free
-  root HTTP(S) origin, canonicalizes the request origin, requests fixed health paths with isolated
-  clients, rejects redirects, ignores
-  ambient proxies, sends no key, cookie, authorization, or custom header, and does not consume
-  provider response bodies.
+- The API process may hold an optional n8n key for the one fixed workflow-list route. Health remains
+  a separate credential-free client and never receives the key.
+- Full provider workflow objects are transiently bounded and projected to only name, active state,
+  and UTC update time; they are not persisted or returned to the browser.
+- Every client able to reach the unauthenticated Hub inventory route can trigger the configured key
+  for that operation and read up to 200 sensitive workflow summaries.
+- The backend validates the configuration-selected root origin, rejects redirects, ignores ambient
+  proxies, and exposes no workflow details, IDs, cursors, executions, provider mutations, generic
+  targets, or browser-held provider credentials.
 - Ollama requests ignore ambient proxy variables and use only explicit validated configuration.
 - Real .env files, local databases, dependency directories, and common secret-file formats are ignored.
 - Prompt list, detail, create, update, delete, and clipboard actions can expose or change sensitive local
@@ -398,9 +482,9 @@ trusted-localhost deployment model.
 - Workflow-link list/detail/write responses expose complete saved URLs, descriptions, tags, and
   timestamps to any client that can reach the unauthenticated app. Queries and fragments may contain
   sensitive local data even though URL user information is rejected.
-- The Hub does not check destination health, fetch metadata, proxy, redirect, authenticate to n8n,
-  or call a stored workflow URL. Open and Copy require explicit browser clicks and use persisted
-  state only.
+- Workflow Links do not check destination health, fetch metadata, proxy, redirect, authenticate to
+  their destinations, or call a stored workflow URL. Open and Copy require explicit browser clicks
+  and use persisted state only.
 - Selected bundle bytes, parsed records, filenames, and previews stay in React memory for the active
   Transfer flow; they are not stored in browser persistence or a server-side staging table.
 - Transfer responses use no-store/no-cache privacy headers. Import accepts only bytes from an
@@ -422,9 +506,10 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
   new records and provide no undo, replacement, or exact database restoration.
 - Transfer has no merge, skip, deduplication, record selection, filtering, encryption, scheduled
   export, backup, synchronization, or restore workflow.
-- Workflow links are generic references only and are never probed. n8n observation is limited to one
-  process-configured origin and two fixed health paths; custom paths, IDs, workflow/execution
-  inventory, synchronization, previews, credentials, and remote mutation are not implemented.
+- Workflow links are generic references only and are never probed. n8n observation is limited to
+  one process-configured origin, two fixed credential-free health paths, and one fixed,
+  summary-only credentialed workflow-list operation. Custom paths, workflow details, IDs, cursors,
+  execution inventory, synchronization, previews, and remote mutation are not implemented.
 - Ollama integration is observation-only; there is no run, pull, or delete action.
 - Docker/container observability is not implemented. The Hub has no Docker access, and n8n HTTP
   health must not be described as container state.
@@ -439,9 +524,9 @@ Read [Security Notes](docs/SECURITY_NOTES.md) before changing network exposure o
 3. **Phase 1B — Workflow Links (complete):** dedicated local references, safe URL handling, CRUD/search/tags, guarded editing, and explicit persisted navigation.
 4. **Phase 1C — Import/Export (complete):** bounded full-registry JSON export, non-mutating preview, and atomic append-only import.
 5. **Phase 2 — Read-only integrations (in progress):** Phase 2A credential-free n8n health
-   observation is implemented and accepted. The summary-only credentialed n8n inventory design
-   (Phase 2B) is approved with implementation pending. Container visibility (Phase 2C) remains
-   deferred and requires its own design approval.
+   observation is implemented and accepted. Summary-only credentialed n8n inventory (Phase 2B) is
+   implemented with final exact-candidate acceptance pending. Container visibility (Phase 2C)
+   remains deferred and requires its own design approval.
 6. **Phase 3 — Safe administration:** authentication, authorization, audit history, and narrowly scoped actions.
 7. **Phase 4 — Operational maturity:** backups, restore drills, CI, release artifacts, migration/upgrade tests, observability, and accessibility.
 8. **Phase 5 — Hardened v1:** threat model, network deployment guidance, security review, stable APIs, versioning, and signed releases.
@@ -465,6 +550,7 @@ The project should be useful on a private localhost setup during Phases 1–2. S
 - [Approved Phase 2A n8n Health Observation design](docs/superpowers/specs/2026-07-19-phase-2a-n8n-health-design.md)
 - [Phase 2A n8n Health Observation implementation plan](docs/superpowers/plans/2026-07-19-phase-2a-n8n-health.md)
 - [Approved Phase 2B n8n Workflow Inventory design](docs/superpowers/specs/2026-07-26-phase-2b-n8n-workflow-inventory-design.md)
+- [Phase 2B n8n Workflow Inventory implementation plan](docs/superpowers/plans/2026-07-26-phase-2b-n8n-workflow-inventory.md)
 
 ## License
 

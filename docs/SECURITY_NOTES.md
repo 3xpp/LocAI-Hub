@@ -39,6 +39,12 @@ Adding any of these capabilities requires explicit approval and separate authent
 - Do not put credentials in N8N_BASE_URL. Missing or exact-empty configuration is safest and makes no
   request; configured values must be a credential-free HTTP(S) root origin and are canonicalized
   after validation.
+- Treat `N8N_API_KEY` as a secret. Phase 2B reads it only from the API process environment for one
+  fixed workflow-list operation; it must never be committed, returned, persisted, logged, or sent
+  to the browser or web service.
+- A sufficiently privileged local operator can reveal the key through process or container
+  environment inspection. Compose environment forwarding is a trusted-localhost convenience, not
+  a secret manager.
 - Do not put credentials, signed tokens, or other secrets in a saved workflow URL. Workflow-link
   user information is rejected, but allowed query strings and fragments are deliberately preserved
   and are not inspected for secrets.
@@ -183,20 +189,19 @@ Phase 2A boundary.
 
 Do not expose the Hub to another network without authentication, authorization, TLS, restrictive
 network policy, and a new security review of both the local registries and this outbound boundary.
-The implemented application still has no API key or workflow/execution inventory. A separately
-approved Phase 2B design now defines one future summary-only workflow inventory; implementation is
-pending. Generic targets, custom health paths, execution access, provider mutation, and Docker
-capabilities remain explicitly deferred. n8n HTTP health is an application-level observation, not
-authoritative container health.
+Phase 2A health itself still has no API key or workflow/execution inventory. Phase 2B now separately
+implements one summary-only credentialed workflow inventory without changing that health client.
+Generic targets, custom health paths, execution access, provider mutation, and Docker capabilities
+remain explicitly deferred. n8n HTTP health is an application-level observation, not authoritative
+container health.
 
-## Approved Phase 2B n8n inventory boundary — implementation pending
+## Phase 2B n8n inventory boundary
 
-Phase 2B is approved to add one optional `N8N_API_KEY` to the API process and use it only for fixed
-`GET /api/v1/workflows` requests against the existing validated `N8N_BASE_URL`. Until that work is
-implemented and accepted, the current application retains the Phase 2A no-key behavior described
-above.
+Phase 2B adds one optional `N8N_API_KEY` to the API process and uses it only for fixed
+`GET /api/v1/workflows` requests against the existing validated `N8N_BASE_URL`. Phase 2A health
+remains a separate credential-free client and never receives the key.
 
-The approved implementation must preserve these constraints:
+The implemented inventory preserves these constraints:
 
 - Phase 2A health stays credential-free, and the key never reaches `/healthz` or
   `/healthz/readiness`.
@@ -222,19 +227,24 @@ The approved implementation must preserve these constraints:
 - Enterprise operators should use a dedicated `workflow:list`-scoped key with expiration.
   Non-Enterprise n8n keys have broader account capability, which materially increases the impact of
   host or process compromise.
+- A sufficiently privileged local operator can reveal the key through process or container
+  environment inspection. Compose is not a secret manager.
+- The inventory adds no provider mutation, workflow detail or execution access, authentication
+  change, public exposure, Docker socket, SDK, Engine API, CLI, container inventory, or control.
 
-The Hub remains unauthenticated. Any client that can reach its fixed inventory route can make the
-Hub use its configured key for that one operation and read up to 200 workflow summaries. This is an
-explicit trusted-localhost confused-deputy boundary, not authorization or rate limiting. Do not
-expose it to a LAN, public network, or untrusted reverse proxy.
+The Hub remains unauthenticated. Any client that can reach
+`GET /api/integrations/n8n/workflows` can make the Hub use its configured key for the fixed provider
+list operation and read up to 200 workflow summaries. This is an explicit trusted-localhost
+confused-deputy boundary, not authorization or rate limiting. Do not expose it to a LAN, public
+network, or untrusted reverse proxy.
 
 ## Dependency and build safety
 
 - Backend and frontend dependencies are locked with uv.lock and pnpm-lock.yaml.
 - Docker builds use the frozen locks.
-- `make build` supplies explicit empty n8n configuration, a safe Ollama URL, and `/dev/null` as the
-  Compose env file so build validation does not implicitly interpolate an ignored local `.env`
-  file.
+- `make build` supplies explicit empty `N8N_API_KEY` and `N8N_BASE_URL` values, a safe Ollama URL,
+  and `/dev/null` as the Compose env file so build validation does not implicitly interpolate an
+  ignored local `.env` file.
 - Real environment files and local databases are excluded from Docker contexts.
 - Compose does not use privileged mode or the Docker socket.
 - Development images and source mounts are not a production hardening profile.

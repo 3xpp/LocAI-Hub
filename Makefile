@@ -35,7 +35,7 @@ format:
 	cd backend && uv run ruff format . && uv run ruff check . --fix
 
 build:
-	N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null build
+	N8N_API_KEY= N8N_BASE_URL= OLLAMA_BASE_URL=http://127.0.0.1:9 docker compose --env-file /dev/null build
 	cd web && pnpm build
 
 db-upgrade:

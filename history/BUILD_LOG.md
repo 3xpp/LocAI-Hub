@@ -2859,3 +2859,55 @@ This journal records what is built, why it changes, and how each milestone is ve
 ### Commit
 
 - `feat: add n8n workflow inventory panel`
+
+## 2026-07-26 — Phase 2B API-only secret boundary and operator documentation
+
+### Milestone
+
+- Added the intentionally empty `N8N_API_KEY=` example setting and forwarded the optional value
+  through Compose only to API runtime. The web service, both build definitions, commands, labels,
+  healthchecks, ports, volumes, service names, and images receive no key.
+- Made the tracked Compose build immune to ambient n8n key and origin values while retaining the
+  explicit safe Ollama origin and `/dev/null` env file. All active README Compose commands now
+  supply explicit safe `N8N_API_KEY`, `N8N_BASE_URL`, and `OLLAMA_BASE_URL` values.
+- Recorded the approved Phase 2B maintenance exception without broadening authentication,
+  deployment, provider-resource, mutation, polling, persistence, network, or Docker capability.
+- Updated operator documentation with the manual summary-only inventory lifecycle, seven-state API
+  contract, backend pagination limits, HTTPS/loopback transport rule, key-scope guidance,
+  unauthenticated confused-deputy risk, API-only credential transport, and non-working local and
+  Compose examples. The four-state HTTP 200 description now explicitly names the separate
+  credential-free health endpoint.
+- Activated the Phase 2B security record while preserving Phase 2A's credential-free health
+  history. The design is marked implemented with final exact-candidate acceptance pending;
+  `docs/DECISIONS.md` remains unchanged because implementation introduced no new decision.
+
+### Secret-safe Compose verification
+
+- The captured `make -n build` check reported `dry_run_markers_absent=true`; neither explicit
+  synthetic ambient marker reached the recipe. Blank `docker compose ... config --quiet` validation
+  reported `blank_compose_config_valid=true`.
+- A private standard-library verifier consumed synthetic Compose JSON directly without printing or
+  saving the rendered model. All 18 boundary booleans were true: services, key, origin, web, builds,
+  commands, labels, healthchecks, ports, volumes, service names, loopback publishing, privileges,
+  capabilities, Docker socket, and Engine settings retained their exact approved shape.
+- The rendered model contained exactly 2 services, 1 API-only key occurrence, 1 API-only n8n-origin
+  occurrence, 2 loopback-published ports, and 6 service mounts. The private verifier root was
+  removed after success.
+
+### Cross-domain validation
+
+- `make format` left all 63 backend files unchanged and Ruff auto-fix reported no findings;
+  both pre- and post-build `git diff --check` runs passed.
+- `make test` passed 752 backend tests. `make test-e2e` passed 191 end-to-end tests. Both runs
+  emitted the existing upstream Starlette `httpx` deprecation warning and no test failure.
+- `make test-web` passed 478 tests across 23 files.
+- `make lint` passed Ruff and ESLint. `make typecheck` passed strict mypy across 38 source files and
+  TypeScript project checking.
+- The independent Ruff format check confirmed all 63 backend files formatted. The production web
+  build passed after transforming 63 modules.
+- `make build` built both API and web images with explicit blank n8n values, then repeated the
+  successful 63-module production web build. Compose emitted the previously documented missing
+  Buildx warning and successfully used the default Docker builder.
+- No dependency, lockfile, schema, migration, authentication, production deployment, public bind,
+  provider mutation, polling, persistence, application Docker access, or architecture-decision
+  change was made. No new product incident was observed, so `docs/FAILURES.md` remains unchanged.
